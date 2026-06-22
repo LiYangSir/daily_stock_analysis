@@ -8,52 +8,65 @@ if (!(Test-Path 'node_modules')) {
 npm run build
 Pop-Location
 
-$pythonBin = $env:PYTHON_BIN
-if ([string]::IsNullOrWhiteSpace($pythonBin)) {
-  $pythonBin = 'python'
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+  Write-Host 'uv not found. Installing via pip...'
+  $bootstrapPython = $env:PYTHON_BIN
+  if ([string]::IsNullOrWhiteSpace($bootstrapPython)) {
+    $bootstrapPython = 'python'
+  }
+  & $bootstrapPython -m pip install --user uv
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Failed to install uv via pip; please install uv manually.'
+  }
 }
 
-Write-Host "Using Python: $pythonBin"
-
-Write-Host 'Verifying static asset references (source)...'
-& $pythonBin "${PSScriptRoot}\check_static_assets.py" 'static'
-if ($LASTEXITCODE -ne 0) {
-  throw "Static asset sanity check failed for source static/. See GitHub #1064."
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+  throw 'uv installation completed but uv executable is not on PATH.'
 }
 
-function Test-PythonCode {
-  param(
-    [string]$Python,
-    [string]$Code
-  )
+function Invoke-UvPython {
+  param([Parameter(ValueFromRemainingArguments = $true)] [string[]]$Args)
+  & uv run python @Args
+}
 
+function Test-UvPythonCode {
+  param([string]$Code)
   try {
-    & $Python -c $Code *> $null
+    & uv run python -c $Code *> $null
     return ($LASTEXITCODE -eq 0)
   } catch {
     return $false
   }
 }
 
-Write-Host 'Building backend executable...'
-if (-not (Test-PythonCode -Python $pythonBin -Code "import PyInstaller")) {
-  & $pythonBin -m pip install pyinstaller
+Write-Host 'Verifying static asset references (source)...'
+Invoke-UvPython "${PSScriptRoot}\check_static_assets.py" 'static'
+if ($LASTEXITCODE -ne 0) {
+  throw "Static asset sanity check failed for source static/. See GitHub #1064."
 }
 
-Write-Host 'Installing backend dependencies...'
-& $pythonBin -m pip install -r requirements.txt
+Write-Host 'Installing backend dependencies (uv sync --frozen)...'
+& uv sync --frozen
 if ($LASTEXITCODE -ne 0) {
-  throw "pip install -r requirements.txt failed with exit code $LASTEXITCODE."
+  throw "uv sync --frozen failed with exit code $LASTEXITCODE."
+}
+
+Write-Host 'Ensuring PyInstaller is available...'
+if (-not (Test-UvPythonCode -Code "import PyInstaller")) {
+  & uv pip install pyinstaller
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to install pyinstaller via uv pip."
+  }
 }
 
 Write-Host 'Checking python-multipart availability...'
-if (-not (Test-PythonCode -Python $pythonBin -Code "import multipart, multipart.multipart")) {
-  throw 'python-multipart is not importable in the selected Python environment.'
+if (-not (Test-UvPythonCode -Code "import multipart, multipart.multipart")) {
+  throw 'python-multipart is not importable in the uv environment.'
 }
 
 Write-Host 'Checking AlphaSift adapter availability...'
-if (-not (Test-PythonCode -Python $pythonBin -Code "import alphasift.dsa_adapter")) {
-  throw 'alphasift.dsa_adapter is not importable after installing requirements.'
+if (-not (Test-UvPythonCode -Code "import alphasift.dsa_adapter")) {
+  throw 'alphasift.dsa_adapter is not importable after uv sync.'
 }
 
 if (Test-Path 'dist\backend') {
@@ -129,8 +142,8 @@ $pyInstallerArgs = @(
 $pyInstallerArgs += $hiddenImportArgs
 $pyInstallerArgs += 'main.py'
 
-Write-Host "Running: $pythonBin $($pyInstallerArgs -join ' ')"
-& $pythonBin @pyInstallerArgs
+Write-Host "Running: uv run python $($pyInstallerArgs -join ' ')"
+& uv run python @pyInstallerArgs
 if ($LASTEXITCODE -ne 0) {
   throw "PyInstaller failed with exit code $LASTEXITCODE."
 }
@@ -167,7 +180,7 @@ if (-not (Test-Path $packagedStatic)) {
   $packagedStatic = Join-Path 'dist\backend\stock_analysis' 'static'
 }
 if (Test-Path $packagedStatic) {
-  & $pythonBin "${PSScriptRoot}\check_static_assets.py" $packagedStatic
+  & uv run python "${PSScriptRoot}\check_static_assets.py" $packagedStatic
   if ($LASTEXITCODE -ne 0) {
     throw "Static asset sanity check failed for packaged $packagedStatic. See GitHub #1064."
   }

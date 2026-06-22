@@ -41,16 +41,17 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v5
       
-      - name: 设置 Python 环境
-        uses: actions/setup-python@v6
+      - name: 设置 uv 环境
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          version: '0.11.21'
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
       
       - name: 安装依赖
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+        run: uv sync --frozen
       
       - name: 创建必要目录
         run: |
@@ -465,11 +466,11 @@ jobs:
 
           # 执行分析
           if [ "$MODE" = "market-only" ]; then
-            python main.py --market-review $FORCE_RUN_ARG
+            uv run python main.py --market-review $FORCE_RUN_ARG
           elif [ "$MODE" = "stocks-only" ]; then
-            python main.py --no-market-review $FORCE_RUN_ARG
+            uv run python main.py --no-market-review $FORCE_RUN_ARG
           else
-            python main.py $FORCE_RUN_ARG
+            uv run python main.py $FORCE_RUN_ARG
           fi
       
       - name: 上传分析报告

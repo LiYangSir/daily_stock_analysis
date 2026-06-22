@@ -860,7 +860,7 @@ const StockScreeningPage: React.FC = () => {
         <InlineAlert
           variant="warning"
           title="AlphaSift 适配层不可用"
-          message="适配层当前不可用，请先确认后端已安装依赖并重启服务，必要时执行 pip install -r requirements.txt 或使用设置页/服务端 /install 接口进行修复安装。"
+          message="适配层当前不可用，请先确认后端已安装依赖并重启服务，必要时执行 uv sync --frozen 或使用设置页/服务端 /install 接口进行修复安装。"
         />
       ) : null}
 

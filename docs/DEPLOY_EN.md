@@ -93,23 +93,23 @@ If you explicitly set `--user` / Compose `user:`, or use read-only mounts, rootl
 
 ## Option 2: Direct Deployment
 
-### 1. Install Python Environment
+### 1. Install uv & Python Environment
 
 ```bash
-# Install Python 3.10+
-sudo apt update
-sudo apt install -y python3.10 python3.10-venv python3-pip
-
-# Create virtual environment
-python3.10 -m venv /opt/stock-analyzer/venv
-source /opt/stock-analyzer/venv/bin/activate
+# Install uv (skip if already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Add uv to PATH if needed (defaults to ~/.local/bin)
+export PATH="$HOME/.local/bin:$PATH"
 ```
+
+uv automatically downloads and pins a Python interpreter that satisfies `requires-python = ">=3.11,<3.13"` from `pyproject.toml`; you do not need to create a venv manually.
 
 ### 2. Install Dependencies
 
 ```bash
 cd /opt/stock-analyzer
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# China mirror example: UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+uv sync --frozen
 ```
 
 ### 3. Configure Environment Variables
@@ -123,13 +123,13 @@ vim .env  # Fill in configuration
 
 ```bash
 # Single run
-python main.py
+uv run python main.py
 
 # Scheduled task mode (foreground)
-python main.py --schedule
+uv run python main.py --schedule
 
 # Background run (using nohup)
-nohup python main.py --schedule > /dev/null 2>&1 &
+nohup uv run python main.py --schedule > /dev/null 2>&1 &
 ```
 
 ---
@@ -154,8 +154,8 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/stock-analyzer
-Environment="PATH=/opt/stock-analyzer/venv/bin"
-ExecStart=/opt/stock-analyzer/venv/bin/python main.py --schedule
+Environment="PATH=/opt/stock-analyzer/.venv/bin"
+ExecStart=/opt/stock-analyzer/.venv/bin/python main.py --schedule
 Restart=always
 RestartSec=30
 

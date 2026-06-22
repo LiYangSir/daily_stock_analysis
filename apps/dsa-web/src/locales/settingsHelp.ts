@@ -198,7 +198,7 @@ const settingsHelpZhCN: SettingsHelpMap = {
   'settings.data_source.ALPHASIFT_ENABLED': {
     title: 'AlphaSift 选股',
     summary: '控制是否启用内置 AlphaSift 选股页。',
-    usage: '默认关闭。设为 true 后，Web 会检查随后端依赖安装的 alphasift.dsa_adapter；若缺失，请先执行 pip install -r requirements.txt 或重建后端产物。',
+    usage: '默认关闭。设为 true 后，Web 会检查随后端依赖安装的 alphasift.dsa_adapter；若缺失，请先执行 uv sync --frozen 或重建后端产物。',
     valueNotes: ['AlphaSift 作为 DSA 后端依赖安装，/install 仅作为显式修复入口保留。', '选股结果仅用于研究辅助，不构成投资建议。'],
     impact: ['影响 Web 选股入口、AlphaSift 策略读取和选股 API。'],
     notes: ['AlphaSift 初筛候选，DSA 补充行情、基本面和新闻上下文；关闭时不影响原有分析、报告和通知流程。'],
@@ -1205,7 +1205,7 @@ const settingsHelpEnUS: SettingsHelpMap = {
   'settings.data_source.ALPHASIFT_ENABLED': {
     title: 'AlphaSift Screening',
     summary: 'Controls the built-in AlphaSift stock screening page.',
-    usage: 'Disabled by default. When true, the Web app checks alphasift.dsa_adapter installed with backend dependencies; if it is missing, run pip install -r requirements.txt or rebuild the backend artifact.',
+    usage: 'Disabled by default. When true, the Web app checks alphasift.dsa_adapter installed with backend dependencies; if it is missing, run uv sync --frozen or rebuild the backend artifact.',
     valueNotes: ['AlphaSift is installed as a DSA backend dependency; /install is retained only as an explicit repair action.', 'Screening output is for research support only and is not investment advice.'],
     impact: ['Affects the Web screening entry, AlphaSift strategy loading, and screening API.'],
     notes: ['AlphaSift generates candidates, while DSA enriches them with quote, fundamental, and news context; disabling it does not affect existing analysis, reports, or notifications.'],

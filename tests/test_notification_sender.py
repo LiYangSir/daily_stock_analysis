@@ -413,7 +413,7 @@ class TestFeishuSender(unittest.TestCase):
         install_hints = [
             line
             for line in logs.output
-            if "pip install -r requirements.txt" in line
+            if "uv sync --frozen" in line
         ]
         self.assertEqual(install_hints, logs.output)
         self.assertEqual(len(install_hints), 1)

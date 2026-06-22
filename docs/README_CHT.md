@@ -144,25 +144,28 @@
 # 克隆項目
 git clone https://github.com/ZhuLinsen/daily_stock_analysis.git && cd daily_stock_analysis
 
-# 安裝依賴
-pip install -r requirements.txt
+# 安裝 uv（如已安裝可跳過）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 安裝依賴（按 uv.lock 鎖版本）
+uv sync --frozen
 
 # 配置環境變數
 cp .env.example .env && vim .env
 
 # 運行分析
-python main.py
+uv run python main.py
 ```
 
 常用命令：
 
 ```bash
-python main.py --debug
-python main.py --dry-run
-python main.py --stocks 600519,hk00700,AAPL
-python main.py --market-review
-python main.py --schedule
-python main.py --serve-only
+uv run python main.py --debug
+uv run python main.py --dry-run
+uv run python main.py --stocks 600519,hk00700,AAPL
+uv run python main.py --market-review
+uv run python main.py --schedule
+uv run python main.py --serve-only
 ```
 
 > Docker 部署、定時任務、雲端伺服器訪問請參考 [完整指南](./full-guide.md)；桌面客戶端打包請參考 [桌面端打包說明](./desktop-package.md)。

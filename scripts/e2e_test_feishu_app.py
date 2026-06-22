@@ -71,13 +71,13 @@ else:
     logger.warning("chat list failed (may lack im:chat permission): %s", chats_data)
     logger.warning("Trying /bot/v3/info instead...")
 
-# 4. Import lark-oapi SDK (installed by standard requirements.txt setup)
+# 4. Import lark-oapi SDK (installed by standard uv sync --frozen setup)
 try:
     import lark_oapi as lark
 except ImportError:
     logger.error(
         "lark-oapi is NOT installed. Standard project setup installs it via:\n"
-        "    pip install -r requirements.txt"
+        "    uv sync --frozen"
     )
     sys.exit(1)
 

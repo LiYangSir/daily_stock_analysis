@@ -8,19 +8,25 @@ log() {
   echo "$1"
 }
 
-PYTHON_BIN="${PYTHON_BIN:-}"
-if [[ -z "${PYTHON_BIN}" ]]; then
+if ! command -v uv >/dev/null 2>&1; then
+  log "uv not found. Installing via pip..."
   if command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
+    python3 -m pip install --user uv
+  elif command -v python >/dev/null 2>&1; then
+    python -m pip install --user uv
   else
-    PYTHON_BIN="python"
+    echo "Python not found. Please install Python 3.11+ and retry."
+    exit 1
   fi
+  export PATH="$HOME/.local/bin:$PATH"
 fi
 
-if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-  echo "Python not found. Please install Python 3.10+ and retry."
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv installation failed or not in PATH. Please install uv manually."
   exit 1
 fi
+
+PY_RUN=(uv run python)
 
 log "Building React UI (static assets)..."
 pushd "${ROOT_DIR}/apps/dsa-web" >/dev/null
@@ -31,21 +37,25 @@ npm run build
 popd >/dev/null
 
 log "Verifying static asset references (source)..."
-"${PYTHON_BIN}" "${SCRIPT_DIR}/check_static_assets.py" "${ROOT_DIR}/static"
+"${PY_RUN[@]}" "${SCRIPT_DIR}/check_static_assets.py" "${ROOT_DIR}/static"
 
-log "Building backend executable..."
-if ! "${PYTHON_BIN}" -m PyInstaller --version >/dev/null 2>&1; then
-  "${PYTHON_BIN}" -m pip install pyinstaller
+log "Installing backend dependencies (uv sync --frozen)..."
+pushd "${ROOT_DIR}" >/dev/null
+uv sync --frozen
+popd >/dev/null
+
+log "Ensuring PyInstaller is available..."
+if ! "${PY_RUN[@]}" -m PyInstaller --version >/dev/null 2>&1; then
+  pushd "${ROOT_DIR}" >/dev/null
+  uv pip install pyinstaller
+  popd >/dev/null
 fi
 
-log "Installing backend dependencies..."
-"${PYTHON_BIN}" -m pip install -r "${ROOT_DIR}/requirements.txt"
-
 log "Checking python-multipart availability..."
-"${PYTHON_BIN}" -c "import multipart, multipart.multipart"
+"${PY_RUN[@]}" -c "import multipart, multipart.multipart"
 
 log "Checking AlphaSift adapter availability..."
-"${PYTHON_BIN}" -c "import alphasift.dsa_adapter"
+"${PY_RUN[@]}" -c "import alphasift.dsa_adapter"
 
 if [[ -d "${ROOT_DIR}/dist/backend" ]]; then
   rm -rf "${ROOT_DIR}/dist/backend"
@@ -110,7 +120,7 @@ for module in "${hidden_imports[@]}"; do
 done
 
 pushd "${ROOT_DIR}" >/dev/null
-cmd=("${PYTHON_BIN}" -m PyInstaller --name stock_analysis --onedir --noconfirm --noconsole --add-data "static:static" --add-data "strategies:strategies" --collect-data litellm --collect-data tiktoken)
+cmd=("${PY_RUN[@]}" -m PyInstaller --name stock_analysis --onedir --noconfirm --noconsole --add-data "static:static" --add-data "strategies:strategies" --collect-data litellm --collect-data tiktoken)
 cmd+=("--collect-all" "alphasift")
 cmd+=("${hidden_import_args[@]}" "main.py")
 
@@ -150,7 +160,7 @@ if [[ ! -d "${packaged_static}" ]]; then
   packaged_static="${ROOT_DIR}/dist/backend/stock_analysis/static"
 fi
 if [[ -d "${packaged_static}" ]]; then
-  "${PYTHON_BIN}" "${SCRIPT_DIR}/check_static_assets.py" "${packaged_static}"
+  "${PY_RUN[@]}" "${SCRIPT_DIR}/check_static_assets.py" "${packaged_static}"
 else
   log "WARNING: could not locate packaged static directory under dist/backend/stock_analysis; skipping post-package check."
 fi

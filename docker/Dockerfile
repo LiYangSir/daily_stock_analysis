@@ -40,11 +40,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd -g 1000 dsa && \
     useradd -u 1000 -g dsa -m dsa
 
-# 复制依赖文件
-COPY requirements.txt .
+# 安装 uv（依赖管理与解析器，真源为 pyproject.toml + uv.lock）
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /usr/local/bin/
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 让 uv 直接把依赖装到系统 Python，避免引入 .venv 层级
+ENV UV_PROJECT_ENVIRONMENT=/usr/local \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never
+
+# 复制依赖描述与锁文件
+COPY pyproject.toml uv.lock ./
+
+# 安装 Python 依赖（按 uv.lock 锁版本，不安装项目自身）
+RUN uv sync --frozen --no-dev --no-install-project
 
 # 复制应用代码
 COPY *.py ./

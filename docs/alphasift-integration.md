@@ -1,37 +1,37 @@
 # AlphaSift 选股集成说明
 
-AlphaSift 作为独立仓库维护的选股引擎接入 DSA。DSA 默认不启用它，也不把 AlphaSift 的策略逻辑复制进主仓库；后端依赖会随 `requirements.txt` 安装，启用后只通过 `alphasift.dsa_adapter` 稳定适配层调用 AlphaSift。
+AlphaSift 作为独立仓库维护的选股引擎接入 DSA。DSA 默认不启用它，也不把 AlphaSift 的策略逻辑复制进主仓库；后端依赖会随 `pyproject.toml` 安装，启用后只通过 `alphasift.dsa_adapter` 稳定适配层调用 AlphaSift。
 
 ## 当前方案
 
 - 默认关闭：`ALPHASIFT_ENABLED=false`。
 - 启用入口：设置页或选股页点击开启，或在 `.env` 中配置 `ALPHASIFT_ENABLED=true`。
-- 依赖来源：`requirements.txt` 固定到已验证的 AlphaSift 适配层 commit：`git+https://github.com/ZhuLinsen/alphasift.git@377049857cc04175dc3cca62121ee41adec6cdb8#egg=alphasift`（对应提交 `https://github.com/ZhuLinsen/alphasift/commit/377049857cc04175dc3cca62121ee41adec6cdb8`，来源 PR `https://github.com/ZhuLinsen/alphasift/pull/16` 与 `https://github.com/ZhuLinsen/alphasift/pull/19`）。该来源覆盖 `alphasift.dsa_adapter` 契约、`screen/list_strategies/get_status` 调用、Tencent 日 K、Sina snapshot、source health、stale daily fallback、候选级 quote context，以及 LLM ranking 的 `LLM_MAX_TOKENS` 输出上限和 timeout 后不重复 JSON-mode 重试的边界。
+- 依赖来源：`pyproject.toml` 固定到已验证的 AlphaSift 适配层 commit：`git+https://github.com/ZhuLinsen/alphasift.git@377049857cc04175dc3cca62121ee41adec6cdb8#egg=alphasift`（对应提交 `https://github.com/ZhuLinsen/alphasift/commit/377049857cc04175dc3cca62121ee41adec6cdb8`，来源 PR `https://github.com/ZhuLinsen/alphasift/pull/16` 与 `https://github.com/ZhuLinsen/alphasift/pull/19`）。该来源覆盖 `alphasift.dsa_adapter` 契约、`screen/list_strategies/get_status` 调用、Tencent 日 K、Sina snapshot、source health、stale daily fallback、候选级 quote context，以及 LLM ranking 的 `LLM_MAX_TOKENS` 输出上限和 timeout 后不重复 JSON-mode 重试的边界。
 - 修复安装来源：`ALPHASIFT_INSTALL_SPEC` 仍保留，默认等于同一个受信任 commit。它不再是策略列表或选股接口的运行时安装主路径，只用于显式调用 `/api/v1/alphasift/install` 时做修复安装和来源校验；未显式配置时才按代码常量 `DEFAULT_ALPHASIFT_INSTALL_SPEC` 回退。
 - 迁移边界（显式 `.env` 优先）：
   - 若 `.env` 中显式保留旧 pin（如 `...de54ea0da367be85770d9589a5bf7ded4f62d386`），DSA 会把该值当作用户覆盖，不会在运行期自动替换为新 pin；
   - 升级后若要启用新 commit，请手动清理该行/改写后并重建依赖；
-  - `ALPHASIFT_INSTALL_SPEC` 与 `/api/v1/alphasift/install` allow-list 强绑定，单改 `.env` 而不同时回退 `requirements.txt` 与 `src/config.py` 常量会被 `alphasift_install_spec_not_allowed` 拒绝。
+  - `ALPHASIFT_INSTALL_SPEC` 与 `/api/v1/alphasift/install` allow-list 强绑定，单改 `.env` 而不同时回退 `pyproject.toml` 与 `src/config.py` 常量会被 `alphasift_install_spec_not_allowed` 拒绝。
 - 回退方式：
   - 路径 A（业务快速回退，约 5 分钟）：设置 `ALPHASIFT_ENABLED=false` 并重启，恢复原始分析链路；
-  - 路径 B（适配层版本回退）：同步回退 `requirements.txt`、`src/config.py`（`DEFAULT_ALPHASIFT_INSTALL_SPEC`）与 `.env.example` 示例值，重新安装依赖后重建后端镜像/桌面产物。
-- 缺失依赖边界：如果运行环境缺少 `alphasift.dsa_adapter`，`status` 返回 `available=false + diagnostics.reason=missing_module`；`strategies` 和 `screen` 返回 `424` 并提示执行 `pip install -r requirements.txt` 或重建 Docker/桌面后端产物，不会在业务请求中自动 `pip install`。
+  - 路径 B（适配层版本回退）：同步回退 `pyproject.toml`、`src/config.py`（`DEFAULT_ALPHASIFT_INSTALL_SPEC`）与 `.env.example` 示例值，重新安装依赖后重建后端镜像/桌面产物。
+- 缺失依赖边界：如果运行环境缺少 `alphasift.dsa_adapter`，`status` 返回 `available=false + diagnostics.reason=missing_module`；`strategies` 和 `screen` 返回 `424` 并提示执行 `uv sync --frozen` 或重建 Docker/桌面后端产物，不会在业务请求中自动安装依赖。
 - 运行异常边界：若适配层可导入但 `get_status()` 报错或返回 `available=false`，DSA 返回 `424 + diagnostics`，保留故障诊断，防止用重装掩盖真实运行时错误。
 - 策略归属：策略列表、策略参数、全市场快照、初筛、因子评分和 LLM 重排由 AlphaSift 负责；DSA 负责开关、API 壳、数据 provider、展示和错误提示。
 
 ## 外部契约来源与迁移边界
 
 - 外部契约依据：本次 AlphaSift 运行契约（含 `schema_version=2` 的热点缓存与题材详情字段）对应 GitHub 提交 `https://github.com/ZhuLinsen/alphasift/commit/377049857cc04175dc3cca62121ee41adec6cdb8`。
-  该 commit 在 DSA 中通过以下链路生效：`requirements.txt` 安装 pin、`src/config.py` 默认 `DEFAULT_ALPHASIFT_INSTALL_SPEC`、`.env.example` 默认示例值。
+  该 commit 在 DSA 中通过以下链路生效：`pyproject.toml` + `uv.lock` 锁定的安装 pin、`src/config.py` 默认 `DEFAULT_ALPHASIFT_INSTALL_SPEC`、`.env.example` 默认示例值。
 - 升级路径：
-  - 部署侧只需按部署方式 `git pull` + `pip install -r requirements.txt` + 重启服务；
+  - 部署侧只需按部署方式 `git pull` + `uv sync --frozen` + 重启服务；
   - 接入新行为前请确认 `ALPHASIFT_INSTALL_SPEC` 未显式覆盖为旧值；
   - 已手动配置 `ALPHASIFT_INSTALL_SPEC` 时，DSA 仅在调用 `install` 时校验来源，不做运行期静默迁移，不会替换原值。
 - 回滚边界（两条路径）：
   - 路径 A（业务临时回退，5 分钟内可执行）：将 `ALPHASIFT_ENABLED=false` 并重启服务/进程。核心分析、日报报表与原有 LLM 调用链路不受该开关影响；此路径不影响依赖版本。
-  - 路径 B（适配层版本回滚）：恢复到上一个版本的 `requirements.txt` 与 `src/config.py`（`DEFAULT_ALPHASIFT_INSTALL_SPEC`）到旧值，并同步回退 `.env.example` 的默认示例，重建后端镜像/桌面后端产物（等价于完整 revert 本次 PR）后重启。仅改 `.env` 回退 `ALPHASIFT_INSTALL_SPEC` 会被当前 allow-list 拒绝，必须与 `requirements.txt` 与代码 allow-list 一起回退。
+  - 路径 B（适配层版本回滚）：恢复到上一个版本的 `pyproject.toml` 与 `src/config.py`（`DEFAULT_ALPHASIFT_INSTALL_SPEC`）到旧值，并同步回退 `.env.example` 的默认示例，重建后端镜像/桌面后端产物（等价于完整 revert 本次 PR）后重启。仅改 `.env` 回退 `ALPHASIFT_INSTALL_SPEC` 会被当前 allow-list 拒绝，必须与 `pyproject.toml` 与代码 allow-list 一起回退。
   - 安装入口说明：`/api/v1/alphasift/install` 仅允许当前代码 `ALLOWED_ALPHASIFT_INSTALL_SPECS`（目前为单值集合）中的来源。若确有需要临时接入其他来源，先在环境中手动安装并确认适配层可导入，再重启服务。
-- 兼容说明：`ALPHASIFT_INSTALL_SPEC` 只影响 `install` 调用时的来源校验；`requirements.txt` 与 `src/config.py` 的常量是实际运行时源码约束。`status` 返回 `install_spec_is_default` 可快速判断当前配置是否与 DSA 代码默认源一致。
+- 兼容说明：`ALPHASIFT_INSTALL_SPEC` 只影响 `install` 调用时的来源校验；`pyproject.toml` 与 `src/config.py` 的常量是实际运行时源码约束。`status` 返回 `install_spec_is_default` 可快速判断当前配置是否与 DSA 代码默认源一致。
 
 - DSA 增强：AlphaSift 通过 DSA provider context 在 LLM 重排前只补充 Top 候选的轻量实时行情和基本面上下文，不在初筛阶段抓新闻；DSA API 返回阶段会对最终 Top 候选补新闻和辅助摘要，并通过 `dsa_enrichment` 记录复用或补全情况。
 - 日 K 线补特征：DSA 调用 AlphaSift 时会优先复用 DSA 历史行情加载链路（数据库缓存、Tushare、Efinance、Akshare、Pytdx、Baostock、Yfinance 等 fallback），仅在 DSA 链路无可用数据时回退到 AlphaSift 原始日线数据源，减少单一上游超时拖垮选股。
@@ -135,14 +135,14 @@ AlphaSift 侧已在 `ZhuLinsen/alphasift@377049857cc04175dc3cca62121ee41adec6cdb
 ## 配置兼容边界（LLM / LiteLLM / Base URL）
 
 - 兼容语义与版本证据（可追溯）：
-  - 运行依赖约束：`requirements.txt` 中将 LiteLLM 固定到 `litellm>=1.80.10,!=1.82.7,!=1.82.8,<2.0.0`，并通过 `git+https://github.com/ZhuLinsen/alphasift.git@377049857cc04175dc3cca62121ee41adec6cdb8` 安装 AlphaSift 适配层。
+  - 运行依赖约束：`pyproject.toml` 中将 LiteLLM 固定到 `litellm>=1.80.10,!=1.82.7,!=1.82.8,<2.0.0`，并通过 `git+https://github.com/ZhuLinsen/alphasift.git@377049857cc04175dc3cca62121ee41adec6cdb8` 安装 AlphaSift 适配层。
   - 文档依据：
     - LiteLLM Providers: https://docs.litellm.ai/docs/providers
     - LiteLLM OpenAI-compatible: https://docs.litellm.ai/docs/providers/openai_compatible
     - LiteLLM model_list/proxy 配置（含 `api_base`、`api_key`、`extra_headers`）: https://docs.litellm.ai/docs/proxy/configs
     - OpenAI 请求语义与授权头: https://platform.openai.com/docs/api-reference/making-requests、https://platform.openai.com/docs/api-reference/authentication
 
-- 结构化检测澄清：本 PR 触及 `.env.example`、`requirements.txt`、`src/config.py` 与本文档，是因为 AlphaSift 依赖 pin 更新和调用期 runtime bridge 需要把既有 DSA LLM 配置透传给外部适配层；本 PR 没有升级 LiteLLM 主版本、没有新增或改名 provider 协议、没有修改 `LITELLM_MODEL`/`LITELLM_FALLBACK_MODELS`/`LLM_CHANNELS`/`LLM_<NAME>_*` 的持久化解析语义。
+- 结构化检测澄清：本 PR 触及 `.env.example`、`pyproject.toml`、`src/config.py` 与本文档，是因为 AlphaSift 依赖 pin 更新和调用期 runtime bridge 需要把既有 DSA LLM 配置透传给外部适配层；本 PR 没有升级 LiteLLM 主版本、没有新增或改名 provider 协议、没有修改 `LITELLM_MODEL`/`LITELLM_FALLBACK_MODELS`/`LLM_CHANNELS`/`LLM_<NAME>_*` 的持久化解析语义。
 - LLM 运行时兼容边界：AlphaSift 不改变主配置链路，只在调用期注入已解析的 `LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS`、`LLM_CHANNELS` 与 `LLM_<NAME>_*` 到进程环境；受管 provider 的 fallback 过滤行为保持现有策略，不做历史配置的静默迁移。`ALPHASIFT_ENABLED` 是当前场景唯一新增持久化分支。
 - 注意：本注入是**短时内存注入**，不会改写 `.env`、不会回写历史配置、不会静默迁移用户自定义 provider/model 路由；失败或未开启时，除了 AlphaSift 选股能力本身，其它 DSA 业务链路保持既有配置执行。
 - 注入来源与回滚原则：
@@ -153,7 +153,7 @@ AlphaSift 侧已在 `ZhuLinsen/alphasift@377049857cc04175dc3cca62121ee41adec6cdb
   - 回退到旧模型名：直接修改 `LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS`，或清空自定义 `LLM_CHANNELS`。
   - 恢复旧渠道：保留历史 `LLM_<NAME>_API_KEYS/BASE_URL` 并重启配置生效，不需执行额外迁移脚本。
 - 兼容校验依据（运维核验）：
-  - 依赖版本依据：当前服务端约束为 `litellm>=1.80.10,!=1.82.7,!=1.82.8,<2.0.0`（见 `requirements.txt`），AlphaSift 只复用该依赖的 provider/model 解析、`model_list` 与调用参数语义。
+  - 依赖版本依据：当前服务端约束为 `litellm>=1.80.10,!=1.82.7,!=1.82.8,<2.0.0`（见 `pyproject.toml`），AlphaSift 只复用该依赖的 provider/model 解析、`model_list` 与调用参数语义。
   - 官方 provider/model 依据：LiteLLM Providers 文档（[https://docs.litellm.ai/docs/providers](https://docs.litellm.ai/docs/providers)）定义 provider 前缀；OpenAI-compatible 文档（[https://docs.litellm.ai/docs/providers/openai_compatible](https://docs.litellm.ai/docs/providers/openai_compatible)）说明 `openai/<model>`、`api_base`、`api_key` 的兼容语义。
   - 官方 `model_list`/额外头依据：LiteLLM config 文档（[https://docs.litellm.ai/docs/proxy/configs](https://docs.litellm.ai/docs/proxy/configs)）说明 `litellm_params` 支持 `model`、`api_base`、`api_key` 与 `extra_headers`。DSA 只把已声明渠道转换为同类结构传给 AlphaSift，不新增模型路由映射，不做 provider 模式迁移。
   - 兼容头部语义依据：OpenAI 调用约定（[https://platform.openai.com/docs/api-reference/making-requests](https://platform.openai.com/docs/api-reference/making-requests)）与鉴权约定（[https://platform.openai.com/docs/api-reference/authentication](https://platform.openai.com/docs/api-reference/authentication)）对应 `Authorization` 与自定义 header 传递行为，`extra_headers` 仅用于补充会话头，不改写模型路由。
@@ -166,7 +166,7 @@ AlphaSift 侧已在 `ZhuLinsen/alphasift@377049857cc04175dc3cca62121ee41adec6cdb
 
 ## 兼容验收索引（发布前核验）
 
-- 依赖与源码约束核验：`requirements.txt` 中的 `litellm` 约束与 `src/config.py`/`requirements.txt` 一致。
+- 依赖与源码约束核验：`pyproject.toml` 中的 `litellm` 约束与 `src/config.py`/`pyproject.toml` 一致。
 - Hotspot 契约兼容核验：`docs/alphasift-integration.md` 与 `api/v1/endpoints/alphasift.py`、`src/services/alphasift_service.py` 保持 `hotspots`/`hotspots/{topic}` 字段与 `tests/test_alphasift_api.py` 一致，调用前后默认使用 `snapshot.last_good` 缓存兜底。
 - 外部版本来源：本次集成依赖来源为 `https://github.com/ZhuLinsen/alphasift/commit/377049857cc04175dc3cca62121ee41adec6cdb8`，需在复验时按该 commit pin 回放导入与接口契约。
 - 行为核验：`src/services/alphasift_service.py` 的 `_build_alphasift_runtime_env` 与 `_build_alphasift_context` 仅在调用期写入进程环境；`/api/v1/alphasift/screen`、`strategies`、`status` 在运行期不回写 `.env`。
@@ -184,7 +184,7 @@ AlphaSift 侧已在 `ZhuLinsen/alphasift@377049857cc04175dc3cca62121ee41adec6cdb
 
 ## Web 行为
 
-- 设置页提供 AlphaSift 开关，开启后写入 `ALPHASIFT_ENABLED=true` 并检查适配层是否可用；若缺失，会回滚开关并提示执行 `pip install -r requirements.txt` 或重建 Docker/桌面后端产物。
+- 设置页提供 AlphaSift 开关，开启后写入 `ALPHASIFT_ENABLED=true` 并检查适配层是否可用；若缺失，会回滚开关并提示执行 `uv sync --frozen` 或重建 Docker/桌面后端产物。
 - `ALPHASIFT_ENABLED` 是“开启选股”按钮背后的持久化状态，不作为普通数据源配置项重复展示。
 - 选股页未开启时展示开启按钮；开启后读取 AlphaSift 策略列表。
 - 当前只暴露 A 股 `cn` 市场。
@@ -197,11 +197,11 @@ AlphaSift 侧已在 `ZhuLinsen/alphasift@377049857cc04175dc3cca62121ee41adec6cdb
 
 源码运行的桌面端复用同一个 Python 后端环境，并设置 `DSA_DESKTOP_MODE=true`；通过设置页开启时如缺少适配层，会提示更新依赖或重建后端产物。
 
-打包后的桌面端不依赖运行期 `pip install`：Windows/CI 使用 `scripts/build-backend.ps1`，macOS 使用 `scripts/build-backend-macos.sh`，两者均先执行 `pip install -r requirements.txt`，再校验并收集 `alphasift.dsa_adapter` 进 PyInstaller 产物。发布包默认仍关闭；用户在 Web 设置页开启后会先检查适配层，若打包产物异常缺失，应重建或更新桌面后端。
+打包后的桌面端不依赖运行期 `pip install`：Windows/CI 使用 `scripts/build-backend.ps1`，macOS 使用 `scripts/build-backend-macos.sh`，两者均先执行 `uv sync --frozen`，再校验并收集 `alphasift.dsa_adapter` 进 PyInstaller 产物。发布包默认仍关闭；用户在 Web 设置页开启后会先检查适配层，若打包产物异常缺失，应重建或更新桌面后端。
 
 ## Docker 说明
 
-Docker 镜像与桌面发布包保持一致：`docker/Dockerfile` 会通过 `requirements.txt` 安装 AlphaSift 并校验 `alphasift.dsa_adapter` 可导入。容器运行时默认仍关闭 AlphaSift；用户通过 `ALPHASIFT_ENABLED=true` 或 Web 设置页开启后使用镜像内置依赖，若运行环境缺失适配层，应重新构建镜像。
+Docker 镜像与桌面发布包保持一致：`docker/Dockerfile` 会通过 `uv sync --frozen`（按 `pyproject.toml` + `uv.lock`）安装 AlphaSift 并校验 `alphasift.dsa_adapter` 可导入。容器运行时默认仍关闭 AlphaSift；用户通过 `ALPHASIFT_ENABLED=true` 或 Web 设置页开启后使用镜像内置依赖，若运行环境缺失适配层，应重新构建镜像。
 
 ## 验证记录
 
@@ -215,6 +215,6 @@ Docker 镜像与桌面发布包保持一致：`docker/Dockerfile` 会通过 `req
 ## 回滚
 
 - 关闭功能：设置页关闭 AlphaSift，或配置 `ALPHASIFT_ENABLED=false`。
-- 版本回退：如需降级 alphasift 适配层，必须同时回退仓库 `requirements.txt` 与 `src/config.py` 中受信任的 pin，否则仅改 `.env` 的 `ALPHASIFT_INSTALL_SPEC` 会被 `alphasift_install_spec_not_allowed` 拒绝；确认后重建依赖与重启服务。
+- 版本回退：如需降级 alphasift 适配层，必须同时回退仓库 `pyproject.toml` 与 `src/config.py` 中受信任的 pin，否则仅改 `.env` 的 `ALPHASIFT_INSTALL_SPEC` 会被 `alphasift_install_spec_not_allowed` 拒绝；确认后重建依赖与重启服务。
 - 特殊来源：如需使用默认来源之外的 AlphaSift 安装包，先在后端 Python 环境完成手动安装并确认 `alphasift.dsa_adapter` 可导入，随后再重启服务（安装前不要触发 `/api/v1/alphasift/install` 的 allow-list 校验路径）。
 - 回滚代码：移除 AlphaSift API 注册、Web 选股入口和相关配置项即可恢复到集成前流程；默认关闭状态下不会影响原有股票分析、报告生成和通知流程。

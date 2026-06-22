@@ -49,19 +49,19 @@ jobs:
             echo "Using event ref: ${GITHUB_REF_NAME}"
           fi
 
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v3
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          version: '0.11.21'
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
 
       - name: Install backend gate dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install flake8 pytest
+        run: uv sync --frozen --extra dev
 
       - name: Run backend gate before publish
-        run: ./scripts/ci_gate.sh
+        run: uv run ./scripts/ci_gate.sh
 
       - name: Validate release docs
         run: |

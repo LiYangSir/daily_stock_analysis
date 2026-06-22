@@ -23,13 +23,11 @@ Thank you for your interest in contributing! All kinds of contributions are welc
 git clone https://github.com/ZhuLinsen/daily_stock_analysis.git
 cd daily_stock_analysis
 
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
+# Install uv (skip if already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (with dev tools flake8 / pytest)
+uv sync --frozen --extra dev
 
 # Configure environment variables
 cp .env.example .env
@@ -90,9 +88,8 @@ Separately, the repository also has a non-blocking `network-smoke` workflow in `
 
 ```bash
 # Backend gate (recommended)
-pip install -r requirements.txt
-pip install flake8 pytest
-./scripts/ci_gate.sh
+uv sync --frozen --extra dev
+uv run ./scripts/ci_gate.sh
 
 # Frontend gate (only if you changed apps/dsa-web/)
 cd apps/dsa-web

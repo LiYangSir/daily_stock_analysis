@@ -110,8 +110,8 @@ print(stock[['name', 'industry', 'list_date']])
 推荐直接使用一键刷新脚本，它会默认在抓取 A 股时使用 `--a-rk`，然后生成并同步自动补全索引：
 
 ```bash
-pip install -r requirements.txt
-python3 scripts/refresh_stock_index.py
+uv sync --frozen
+uv run python scripts/refresh_stock_index.py
 ```
 
 生成自动补全索引依赖 `pypinyin` 写入中文股票的完整拼音和拼音首字母字段；缺少该依赖时脚本会直接失败，避免生成无法支持拼音搜索的降级索引。

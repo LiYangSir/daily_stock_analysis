@@ -1564,7 +1564,7 @@ class AlphaSiftOpportunitiesApiTestCase(unittest.TestCase):
         self.assertEqual(caught.exception.status_code, 424)
         self.assertEqual(caught.exception.detail["error"], "alphasift_unavailable")
         self.assertEqual(caught.exception.detail.get("diagnostics", {}).get("reason"), "missing_module")
-        self.assertIn("pip install -r requirements.txt", caught.exception.detail["message"])
+        self.assertIn("uv sync --frozen", caught.exception.detail["message"])
         install_mock.assert_not_called()
 
     def test_start_screen_task_submits_background_work(self) -> None:

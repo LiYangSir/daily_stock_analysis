@@ -16,9 +16,8 @@ REVIEW_PATHS = [
     'AGENTS.md',
     'docs/**',
     '.github/PULL_REQUEST_TEMPLATE.md',
-    'requirements.txt',
-    '.github/requirements-ci.txt',
     'pyproject.toml',
+    'uv.lock',
     'setup.cfg',
     '.github/workflows/*.yml',
     '.github/scripts/*.py',
@@ -70,7 +69,7 @@ def classify_files(files):
     frontend_files = [f for f in files if f.startswith('apps/dsa-web/') or f.endswith(('.tsx', '.ts'))]
     ci_files = [f for f in files if f.startswith('.github/workflows/')]
     config_files = [
-        f for f in files if f in ('requirements.txt', '.github/requirements-ci.txt', 'pyproject.toml', 'setup.cfg', '.github/PULL_REQUEST_TEMPLATE.md')
+        f for f in files if f in ('pyproject.toml', 'uv.lock', 'setup.cfg', '.github/PULL_REQUEST_TEMPLATE.md')
     ]
     return py_files, doc_files, frontend_files, ci_files, config_files
 

@@ -43,7 +43,7 @@ def require_pypinyin() -> bool:
         return True
 
     print("[Error] pypinyin not available; cannot generate stock autocomplete index.")
-    print("[Info] Install dependencies with: pip install -r requirements.txt")
+    print("[Info] Install dependencies with: uv sync --frozen")
     return False
 
 

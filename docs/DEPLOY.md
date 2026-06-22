@@ -97,23 +97,23 @@ Docker 镜像启动入口会自动创建并修复 `./data`、`./logs`、`./repor
 
 ## 🖥️ 方案二：直接部署
 
-### 1. 安装 Python 环境
+### 1. 安装 uv 与 Python 环境
 
 ```bash
-# 安装 Python 3.10+
-sudo apt update
-sudo apt install -y python3.10 python3.10-venv python3-pip
-
-# 创建虚拟环境
-python3.10 -m venv /opt/stock-analyzer/venv
-source /opt/stock-analyzer/venv/bin/activate
+# 安装 uv（如已安装可跳过）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# 必要时把 uv 加入 PATH（默认安装到 ~/.local/bin）
+export PATH="$HOME/.local/bin:$PATH"
 ```
+
+uv 会按 `pyproject.toml` 中的 `requires-python = ">=3.11,<3.13"` 自动下载并锁定解释器版本，不需要手动安装 venv。
 
 ### 2. 安装依赖
 
 ```bash
 cd /opt/stock-analyzer
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 国内可使用清华源：UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+uv sync --frozen
 ```
 
 ### 3. 配置环境变量
@@ -127,19 +127,19 @@ vim .env  # 填入配置
 
 ```bash
 # 单次运行
-python main.py
+uv run python main.py
 
 # 定时任务模式（前台运行）
-python main.py --schedule
+uv run python main.py --schedule
 
 # 后台运行（使用 nohup）
-nohup python main.py --schedule > /dev/null 2>&1 &
+nohup uv run python main.py --schedule > /dev/null 2>&1 &
 
 # 启动 Web 管理界面（云服务器需先在 .env 中设置 WEBUI_HOST=0.0.0.0）
-python main.py --webui-only
+uv run python main.py --webui-only
 
 # 启动 Web 界面（启动时执行一次分析；需每日定时请加 --schedule 或设 SCHEDULE_ENABLED=true）
-python main.py --webui
+uv run python main.py --webui
 ```
 
 > 不知道怎么访问？→ [云服务器 Web 界面访问指南](deploy-webui-cloud.md)
@@ -166,8 +166,8 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/stock-analyzer
-Environment="PATH=/opt/stock-analyzer/venv/bin"
-ExecStart=/opt/stock-analyzer/venv/bin/python main.py --schedule
+Environment="PATH=/opt/stock-analyzer/.venv/bin"
+ExecStart=/opt/stock-analyzer/.venv/bin/python main.py --schedule
 Restart=always
 RestartSec=30
 
@@ -333,7 +333,7 @@ deploy:
   npm run build
   cd ../..
   # 启动服务
-  python main.py --webui-only
+  uv run python main.py --webui-only
   ```
 
 **验证**：用浏览器开发者工具（F12 → Network）检查是否有 `/assets/index-*.js` 和 `/assets/index-*.css` 的 404 错误；如有，说明资源缺失，按上述步骤重新构建即可。
