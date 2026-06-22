@@ -653,7 +653,7 @@ const HomePage: React.FC = () => {
   return (
     <div
       data-testid="home-dashboard"
-      className="flex w-full flex-col md:flex-row"
+      className="mx-auto flex w-full max-w-7xl flex-col px-4 md:flex-row md:px-6 lg:px-8"
     >
       <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full">
         <header className="relative z-30 flex min-w-0 flex-shrink-0 items-center overflow-visible px-3 py-3 md:px-4 md:py-4">

@@ -11,7 +11,6 @@ import {
   Drawer,
   EmptyState,
   InlineAlert,
-  PageHeader,
   Pagination,
 } from '../components/common';
 import {
@@ -421,28 +420,8 @@ const DecisionSignalsPage: React.FC = () => {
   return (
     <AppPage>
       <div className="space-y-5">
-        <PageHeader
-          eyebrow={t('decisionSignals.activeOnly')}
-          title={t('decisionSignals.title')}
-          description={t('decisionSignals.description')}
-          actions={(
-            <button
-              type="button"
-              className="btn-secondary inline-flex items-center gap-2"
-              onClick={() => {
-                void loadSignals();
-                void loadOutcomeStats();
-              }}
-              disabled={loading}
-            >
-              <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-              {t('decisionSignals.refresh')}
-            </button>
-          )}
-        />
-
         <Card padding="md">
-          <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-7" onSubmit={handleApplyFilters}>
+          <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-9" onSubmit={handleApplyFilters}>
             <select
               className="input-surface input-focus-glow h-11 rounded-xl border bg-transparent px-3 text-sm"
               value={filters.market}
@@ -517,6 +496,18 @@ const DecisionSignalsPage: React.FC = () => {
             <button type="submit" className="btn-primary inline-flex h-11 items-center justify-center gap-2">
               <Search className="h-4 w-4" />
               {t('decisionSignals.filter')}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary inline-flex h-11 items-center justify-center gap-2"
+              onClick={() => {
+                void loadSignals();
+                void loadOutcomeStats();
+              }}
+              disabled={loading}
+            >
+              <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
+              {t('decisionSignals.refresh')}
             </button>
           </form>
         </Card>

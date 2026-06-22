@@ -1001,40 +1001,31 @@ const SettingsPage: React.FC = () => {
   );
 
   return (
-    <div className="settings-page min-h-full px-4 pb-6 pt-4 md:px-6">
+    <div className="settings-page mx-auto min-h-full w-full max-w-7xl px-4 pb-6 pt-3 md:px-6 md:pt-4 lg:px-8">
       <div className="mb-5 rounded-[1.5rem] border settings-border bg-card/94 px-5 py-5 shadow-soft-card-strong backdrop-blur-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.pageTitle')}</h1>
-            <p className="text-xs leading-6 text-muted-text">
-              {t('settings.pageDescription')}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="settings-secondary"
-              onClick={resetDraft}
-              disabled={isLoading || isSaving}
-            >
-              {t('settings.reset')}
-            </Button>
-              <Button
-                type="button"
-                variant="settings-primary"
-                onClick={() => void handleSaveConfig()}
-                disabled={!effectiveHasDirty || isSaving || isLoading}
-                isLoading={isSaving}
-                loadingText={t('settings.saving')}
-              >
-                {isSaving
-                  ? t('settings.saving')
-                  : effectiveDirtyCount
-                    ? t('settings.saveConfigWithCount', { count: effectiveDirtyCount })
-                    : t('settings.saveConfig')}
-              </Button>
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="settings-secondary"
+            onClick={resetDraft}
+            disabled={isLoading || isSaving}
+          >
+            {t('settings.reset')}
+          </Button>
+          <Button
+            type="button"
+            variant="settings-primary"
+            onClick={() => void handleSaveConfig()}
+            disabled={!effectiveHasDirty || isSaving || isLoading}
+            isLoading={isSaving}
+            loadingText={t('settings.saving')}
+          >
+            {isSaving
+              ? t('settings.saving')
+              : effectiveDirtyCount
+                ? t('settings.saveConfigWithCount', { count: effectiveDirtyCount })
+                : t('settings.saveConfig')}
+          </Button>
         </div>
 
         {saveError ? (

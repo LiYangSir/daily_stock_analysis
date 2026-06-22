@@ -871,7 +871,7 @@ const ChatPage: React.FC = () => {
   return (
     <div
       data-testid="chat-workspace"
-      className="flex h-[calc(100vh-5rem)] w-full min-w-0 gap-4 overflow-hidden sm:h-[calc(100vh-5.5rem)] lg:h-[calc(100vh-2rem)]"
+      className="mx-auto flex h-[calc(100vh-5rem)] w-full max-w-7xl min-w-0 gap-4 overflow-hidden px-4 pt-3 sm:h-[calc(100vh-5.5rem)] md:px-6 md:pt-4 lg:h-[calc(100vh-2rem)] lg:px-8"
     >
       {/* Desktop sidebar */}
       <div className="hidden h-full w-64 flex-shrink-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-card/82 shadow-soft-card md:flex">
@@ -907,31 +907,16 @@ const ChatPage: React.FC = () => {
       />
 
       {/* Main chat area */}
-      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="mb-4 flex-shrink-0 space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-hover transition-colors text-secondary-text hover:text-foreground"
-                aria-label="历史对话"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
+      <div className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="pointer-events-none absolute left-4 right-4 top-3 z-20 flex flex-col items-end gap-2">
+          <div className="flex w-full items-center justify-between gap-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="pointer-events-auto -ml-1 rounded-lg p-1.5 text-secondary-text transition-colors hover:bg-hover hover:text-foreground md:hidden"
+              aria-label="历史对话"
+            >
               <svg
-                className="w-6 h-6 text-cyan"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -940,13 +925,12 @@ const ChatPage: React.FC = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  d="M4 6h16M4 12h16M4 18h16"
                 />
               </svg>
-              问股
-            </h1>
-            {messages.length > 0 && (
-              <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
+            </button>
+            {messages.length > 0 ? (
+              <div className="pointer-events-auto flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
                 <Tooltip content="导出会话为 Markdown 文件">
                   <span className="inline-flex">
                     <Button
@@ -1038,11 +1022,10 @@ const ChatPage: React.FC = () => {
                   </span>
                 </Tooltip>
               </div>
+            ) : (
+              <span className="hidden md:block" aria-hidden="true" />
             )}
           </div>
-          <p className="text-secondary-text text-sm">
-            向 AI 询问个股分析，获取基于技能视角的交易建议与实时决策报告。
-          </p>
           {sendToast ? (
             <InlineAlert
               variant={sendToast.type === 'success' ? 'success' : 'danger'}
@@ -1053,13 +1036,13 @@ const ChatPage: React.FC = () => {
           ) : null}
         </header>
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden border border-white/6 bg-card/78 glass-card">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden border border-cyan/10 bg-card/78 shadow-[inset_0_1px_0_hsl(var(--primary)/0.08)] glass-card">
           {/* Messages */}
           <ScrollArea
             className="relative z-10 flex-1"
             viewportRef={messagesViewportRef}
             onScroll={handleMessagesScroll}
-            viewportClassName="space-y-6 p-4 md:p-6"
+            viewportClassName={cn('space-y-6 p-4 md:p-6', messages.length > 0 ? 'pt-16 md:pt-16' : '')}
             testId="chat-message-scroll"
           >
             {messages.length === 0 && !loading ? (

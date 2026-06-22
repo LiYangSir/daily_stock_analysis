@@ -43,8 +43,6 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
   const current = ROUTE_TITLES[location.pathname];
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Floating card width: 16rem (open) / 4.5rem (collapsed). Outer aside also has p-3 (0.75rem each side).
   const sidebarShellWidth = sidebarOpen ? '16rem' : '4.5rem';
 
   return (
@@ -71,13 +69,12 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
           </div>
         </aside>
 
-        {/* Mobile drawer sidebar */}
         {mobileOpen ? (
           <div className="fixed inset-0 z-50 md:hidden" onClick={() => setMobileOpen(false)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <aside
               className="absolute inset-y-0 left-0 flex w-72 p-3"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
               <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl">
                 <SidebarNav onNavigate={() => setMobileOpen(false)} />
@@ -88,39 +85,41 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
 
         {/* Main column — reserves left space equal to floating sidebar width on md+ */}
         <div className="flex min-h-svh w-full flex-col pl-0 md:pl-[var(--shell-sidebar)]">
-          <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="-ml-1 h-9 w-9"
-              aria-label={t('layout.openNav')}
-              onClick={() => {
-                if (window.matchMedia('(min-width: 768px)').matches) {
-                  setSidebarOpen((value) => !value);
-                } else {
-                  setMobileOpen(true);
-                }
-              }}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-            <Separator orientation="vertical" className="mr-2 h-5" />
-            <div className="flex min-w-0 flex-1 flex-col leading-tight">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="truncate text-sm font-semibold text-foreground">
-                      {current ? t(current.title) : t('layout.appFallbackTitle')}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              <span className="truncate text-xs text-muted-foreground">
-                {current ? t(current.description) : t('layout.appFallbackDescription')}
-              </span>
+          <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-2 px-4 md:px-6 lg:px-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="-ml-1 h-9 w-9"
+                aria-label={t('layout.openNav')}
+                onClick={() => {
+                  if (window.matchMedia('(min-width: 768px)').matches) {
+                    setSidebarOpen((value) => !value);
+                  } else {
+                    setMobileOpen(true);
+                  }
+                }}
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+              <Separator orientation="vertical" className="mr-2 h-5" />
+              <div className="flex min-w-0 flex-1 flex-col leading-tight">
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="truncate text-sm font-semibold text-foreground">
+                        {current ? t(current.title) : t('layout.appFallbackTitle')}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+                <span className="truncate text-xs text-muted-foreground">
+                  {current ? t(current.description) : t('layout.appFallbackDescription')}
+                </span>
+              </div>
             </div>
           </header>
-          <main className="flex flex-1 flex-col min-w-0 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+          <main className="flex flex-1 flex-col min-w-0 pb-4 pt-4 sm:pb-5 sm:pt-5">
             {children ?? <Outlet />}
           </main>
         </div>

@@ -103,7 +103,7 @@ describe('TokenUsagePage', () => {
   it('renders token summary, model breakdowns, and recent calls from the dashboard API shape', async () => {
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Token 用量监控' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '刷新' })).toBeInTheDocument();
     expect(await screen.findByText('400')).toBeInTheDocument();
     expect(screen.getAllByText('openai/gpt-test')).toHaveLength(2);
     expect(screen.getAllByText('个股分析')).toHaveLength(2);
@@ -118,7 +118,7 @@ describe('TokenUsagePage', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Token usage' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Refresh' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
     expect(screen.getAllByText('Stock analysis')).toHaveLength(2);
     expect(screen.getByText('Latest 50 LLM token audit records.')).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe('TokenUsagePage', () => {
   it('reloads dashboard when period changes', async () => {
     renderPage();
 
-    await screen.findByRole('heading', { name: 'Token 用量监控' });
+    await screen.findByRole('button', { name: '刷新' });
     fireEvent.click(screen.getByRole('button', { name: '今日' }));
 
     await waitFor(() => {

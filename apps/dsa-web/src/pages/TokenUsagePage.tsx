@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Clock3, Cpu, Database, Gauge, RefreshCw } from 'lucide-react';
 import { usageApi, type UsageDashboard, type UsageModelBreakdown, type UsagePeriod } from '../api/usage';
 import type { ParsedApiError } from '../api/error';
-import { ApiErrorAlert, AppPage, Card, EmptyState, PageHeader, StatCard } from '../components/common';
+import { ApiErrorAlert, AppPage, Card, EmptyState, StatCard } from '../components/common';
 import { useUiLanguage } from '../contexts/UiLanguageContext';
 import type { UiLanguage, UiTextKey, UiTextParams } from '../i18n/uiText';
 import { cn } from '../utils/cn';
@@ -144,41 +144,34 @@ const TokenUsagePage: React.FC = () => {
   return (
     <AppPage>
       <div className="space-y-5">
-        <PageHeader
-          eyebrow={t('usage.eyebrow')}
-          title={t('usage.title')}
-          description={t('usage.description')}
-          actions={(
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex rounded-xl border border-border/70 bg-card/70 p-1">
-                {PERIOD_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setPeriod(option)}
-                    className={cn(
-                      'rounded-lg px-3 py-1.5 text-sm transition-colors',
-                      period === option
-                        ? 'bg-cyan text-background shadow-soft-card'
-                        : 'text-secondary-text hover:bg-hover hover:text-foreground'
-                    )}
-                  >
-                    {t(PERIOD_LABEL_KEYS[option])}
-                  </button>
-                ))}
-              </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="inline-flex rounded-xl border border-border/70 bg-card/70 p-1">
+            {PERIOD_OPTIONS.map((option) => (
               <button
+                key={option}
                 type="button"
-                className="btn-secondary inline-flex items-center gap-2"
-                onClick={() => void loadDashboard()}
-                disabled={loading}
+                onClick={() => setPeriod(option)}
+                className={cn(
+                  'rounded-lg px-3 py-1.5 text-sm transition-colors',
+                  period === option
+                    ? 'bg-cyan text-background shadow-soft-card'
+                    : 'text-secondary-text hover:bg-hover hover:text-foreground'
+                )}
               >
-                <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-                {t('usage.refresh')}
+                {t(PERIOD_LABEL_KEYS[option])}
               </button>
-            </div>
-          )}
-        />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-2"
+            onClick={() => void loadDashboard()}
+            disabled={loading}
+          >
+            <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
+            {t('usage.refresh')}
+          </button>
+        </div>
 
         {error ? <ApiErrorAlert error={error} actionLabel={t('common.retry')} onAction={() => void loadDashboard()} /> : null}
 

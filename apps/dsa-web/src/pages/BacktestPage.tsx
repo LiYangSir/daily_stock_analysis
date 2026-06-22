@@ -28,7 +28,11 @@ import { getMarketPhaseSummaryLabel } from '../utils/marketPhase';
 const BACKTEST_INPUT_CLASS =
   'input-surface input-focus-glow h-11 w-full rounded-xl border bg-transparent px-4 text-sm transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-60';
 const BACKTEST_COMPACT_INPUT_CLASS =
-  'input-surface input-focus-glow h-10 rounded-xl border bg-transparent px-3 py-2 text-xs transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-60';
+  'input-surface input-focus-glow h-11 rounded-xl border bg-transparent px-3 text-sm transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-60';
+const BACKTEST_TOOL_BUTTON_CLASS =
+  'inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium';
+const BACKTEST_FIELD_LABEL_CLASS =
+  'text-xs font-medium text-muted-text';
 type BacktestText = (typeof BACKTEST_TEXT)[UiLanguage];
 
 // ============ Helpers ============
@@ -400,10 +404,10 @@ const BacktestPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full flex flex-col rounded-[1.5rem] bg-transparent">
+    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col rounded-[1.5rem] bg-transparent px-4 pt-3 md:px-6 md:pt-4 lg:px-8">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-white/5 px-3 py-3 sm:px-4">
-        <div className="flex max-w-5xl flex-wrap items-center gap-2">
+      <header className="flex-shrink-0 rounded-2xl border border-cyan/10 bg-gradient-to-br from-cyan/5 via-card/80 to-card/65 px-3 py-3 shadow-soft-card sm:px-4">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="relative min-w-0 flex-[1_1_220px]">
             <input
               type="text"
@@ -419,12 +423,12 @@ const BacktestPage: React.FC = () => {
             type="button"
             onClick={handleFilter}
             disabled={isLoadingResults}
-            className="btn-secondary flex items-center gap-1.5 whitespace-nowrap"
+            className={`btn-secondary ${BACKTEST_TOOL_BUTTON_CLASS}`}
           >
             {text.filter}
           </button>
-          <div className="flex items-center gap-2 whitespace-nowrap lg:w-40 lg:justify-between">
-            <span className="text-xs text-muted-text">{text.evalWindow}</span>
+          <label className="flex min-w-[8rem] flex-col gap-1">
+            <span className={BACKTEST_FIELD_LABEL_CLASS}>{text.evalWindow}</span>
             <input
               type="number"
               min={1}
@@ -435,22 +439,22 @@ const BacktestPage: React.FC = () => {
               disabled={isRunning}
               className={`${BACKTEST_COMPACT_INPUT_CLASS} w-24 text-center tabular-nums`}
             />
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-xs text-muted-text">{text.phase}</span>
+          </label>
+          <label className="flex min-w-[8rem] flex-col gap-1">
+            <span className={BACKTEST_FIELD_LABEL_CLASS}>{text.phase}</span>
             <select
               value={phaseFilter}
               onChange={(e) => setPhaseFilter(e.target.value as BacktestPhaseFilter)}
               disabled={isRunning}
-              className={`${BACKTEST_COMPACT_INPUT_CLASS} w-28`}
+              className={`${BACKTEST_COMPACT_INPUT_CLASS} w-32`}
             >
               {phaseFilterOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-xs text-muted-text">{text.startDate}</span>
+          </label>
+          <label className="flex min-w-[10rem] flex-col gap-1">
+            <span className={BACKTEST_FIELD_LABEL_CLASS}>{text.startDate}</span>
             <input
               type="date"
               aria-label={text.startDateAria}
@@ -460,9 +464,9 @@ const BacktestPage: React.FC = () => {
               disabled={isRunning}
               className={`${BACKTEST_COMPACT_INPUT_CLASS} w-40 text-center tabular-nums`}
             />
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-xs text-muted-text">{text.endDate}</span>
+          </label>
+          <label className="flex min-w-[10rem] flex-col gap-1">
+            <span className={BACKTEST_FIELD_LABEL_CLASS}>{text.endDate}</span>
             <input
               type="date"
               aria-label={text.endDateAria}
@@ -472,30 +476,30 @@ const BacktestPage: React.FC = () => {
               disabled={isRunning}
               className={`${BACKTEST_COMPACT_INPUT_CLASS} w-40 text-center tabular-nums`}
             />
-          </div>
+          </label>
           <button
             type="button"
             onClick={handleShowNextDay}
             disabled={isLoadingResults || isLoadingPerf}
-            className={`backtest-force-btn ${isNextDayValidation ? 'active' : ''}`}
+            className={`${BACKTEST_TOOL_BUTTON_CLASS} border transition-colors ${isNextDayValidation ? 'border-cyan/35 bg-cyan/10 text-cyan' : 'border-border/70 bg-card/70 text-secondary-text hover:bg-hover hover:text-foreground'}`}
           >
-            <span className="dot" />
+            <span className={`h-2 w-2 rounded-full ${isNextDayValidation ? 'bg-cyan' : 'bg-muted-foreground/50'}`} />
             {text.oneDayValidation}
           </button>
           <button
             type="button"
             onClick={() => setForceRerun(!forceRerun)}
             disabled={isRunning}
-            className={`backtest-force-btn ${forceRerun ? 'active' : ''}`}
+            className={`${BACKTEST_TOOL_BUTTON_CLASS} border transition-colors ${forceRerun ? 'border-warning/35 bg-warning/10 text-warning' : 'border-border/70 bg-card/70 text-secondary-text hover:bg-hover hover:text-foreground'}`}
           >
-            <span className="dot" />
+            <span className={`h-2 w-2 rounded-full ${forceRerun ? 'bg-warning' : 'bg-muted-foreground/50'}`} />
             {text.forceRerun}
           </button>
           <button
             type="button"
             onClick={handleRun}
             disabled={isRunning}
-            className="btn-primary flex items-center gap-1.5 whitespace-nowrap"
+            className={`btn-primary ${BACKTEST_TOOL_BUTTON_CLASS}`}
           >
             {isRunning ? (
               <>

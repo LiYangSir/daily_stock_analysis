@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [修复] 避免 runtime scheduler 重建定时任务时重复立即运行事件监控，减少重复告警和后台任务状态丢失。
 - [修复] Web/API runtime scheduler 接管 `--serve --schedule` 后保留 `--dry-run`、`--no-notify` 等启动参数语义。
 - [改进] Web 历史报告详情不再内嵌展示 AI 建议卡片，结构化决策信号集中在 AI 建议页查询，并保留按来源报告 ID 筛选或 URL 参数精确定位入口。
+- [改进] Web 主布局将页面级标题与说明收口到顶部面包屑栏，统一主要页面正文宽度、顶部间距、问股/回测控件对齐与关键数据颜色点缀。
 - [chore] 将项目依赖管理从 pip + requirements.txt 迁移到 uv（pyproject.toml + uv.lock）；Dockerfile、CI workflows、桌面端打包脚本、文档与用户面向提示统一更新。
 
 ## [3.23.0] - 2026-06-20

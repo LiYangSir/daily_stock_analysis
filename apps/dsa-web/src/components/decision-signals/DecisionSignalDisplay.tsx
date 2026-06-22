@@ -171,6 +171,20 @@ const SignalMetric: React.FC<SignalMetricProps> = ({ label, value, tone = 'defau
   </div>
 );
 
+function getScoreTone(value: number | null | undefined): SignalMetricTone {
+  if (value == null) return 'default';
+  if (value >= 80) return 'success';
+  if (value >= 60) return 'warning';
+  return 'danger';
+}
+
+function getConfidenceTone(value: number | null | undefined): SignalMetricTone {
+  if (value == null) return 'default';
+  if (value >= 0.7) return 'success';
+  if (value >= 0.5) return 'warning';
+  return 'danger';
+}
+
 type SignalTextTone = 'default' | 'warning' | 'danger' | 'info';
 
 const textToneClass: Record<SignalTextTone, string> = {
@@ -217,12 +231,13 @@ export const DecisionSignalCard: React.FC<DecisionSignalCardProps> = ({ item, on
     { label: t('decisionSignals.targetPrice'), value: formatNumber(item.targetPrice), tone: 'success' as const },
   ].filter((entry) => hasDisplayValue(entry.value));
   const className = cn(
-    'block w-full rounded-2xl border bg-card/75 p-4 text-left',
+    'relative block w-full overflow-hidden rounded-2xl border bg-gradient-to-br from-cyan/5 via-card/80 to-card/75 p-4 text-left',
     interactive ? 'transition-colors hover:border-cyan/40 hover:bg-hover/70' : '',
     selected ? 'border-cyan/50 bg-cyan/10' : 'border-border/70',
   );
   const content = (
     <>
+      <span className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-cyan/45 to-transparent" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -241,8 +256,8 @@ export const DecisionSignalCard: React.FC<DecisionSignalCardProps> = ({ item, on
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <SignalMetric label={t('decisionSignals.score')} value={formatNumber(item.score)} />
-        <SignalMetric label={t('decisionSignals.confidence')} value={formatConfidence(item.confidence)} />
+        <SignalMetric label={t('decisionSignals.score')} value={formatNumber(item.score)} tone={getScoreTone(item.score)} />
+        <SignalMetric label={t('decisionSignals.confidence')} value={formatConfidence(item.confidence)} tone={getConfidenceTone(item.confidence)} />
         <SignalMetric label={t('decisionSignals.horizon')} value={getDecisionSignalHorizonLabel(item.horizon, t)} />
       </div>
 
