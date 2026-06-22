@@ -1,7 +1,10 @@
 import type React from 'react';
-import { useEffect, useCallback } from 'react';
-import { useUiLanguage } from '../../contexts/UiLanguageContext';
+import { useEffect } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+
 import { cn } from '../../utils/cn';
+import { useUiLanguage } from '../../contexts/UiLanguageContext';
 
 let activeDrawerCount = 0;
 
@@ -17,7 +20,11 @@ interface DrawerProps {
 }
 
 /**
- * Side drawer component with terminal-inspired styling.
+ * Legacy Drawer contract:
+ * - Modal-style: a backdrop dims the rest of the page and clicking it closes the drawer.
+ * - body scroll is locked while one or more drawers are open.
+ * - Esc closes the drawer.
+ * - Title and width / side / zIndex are honored as before.
  */
 export const Drawer: React.FC<DrawerProps> = ({
   isOpen,
@@ -25,91 +32,87 @@ export const Drawer: React.FC<DrawerProps> = ({
   title,
   children,
   width = 'max-w-2xl',
-  zIndex = 50,
+  zIndex,
   side = 'right',
   backdropClassName,
 }) => {
   const { t } = useUiLanguage();
-  // Close the drawer when Escape is pressed.
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
+  const widthClass = width.startsWith('max-w-') ? width : 'max-w-2xl';
 
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      activeDrawerCount++;
-      if (activeDrawerCount === 1) {
-        document.body.style.overflow = 'hidden';
-      }
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        activeDrawerCount--;
-        if (activeDrawerCount === 0) {
-          document.body.style.overflow = '';
-        }
-      };
+    if (!isOpen) return undefined;
+    activeDrawerCount += 1;
+    if (activeDrawerCount === 1 && typeof document !== 'undefined') {
+      document.body.style.overflow = 'hidden';
     }
-  }, [isOpen, handleKeyDown]);
+    return () => {
+      activeDrawerCount = Math.max(0, activeDrawerCount - 1);
+      if (activeDrawerCount === 0 && typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const titleId = title ? `drawer-title-${side}` : undefined;
-  const sidePositionClass = side === 'left' ? 'left-0 justify-start' : 'right-0 justify-end';
-  const borderClass = side === 'left' ? 'border-r' : 'border-l';
-
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ zIndex }} role="presentation">
-      {/* Backdrop */}
-      <div
-        className={cn(
-          'absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-300',
-          backdropClassName,
-        )}
-        onClick={onClose}
-      />
-
-      <div className={cn('absolute inset-y-0 flex w-full', sidePositionClass, width)}>
+    <DialogPrimitive.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      modal={false}
+    >
+      <DialogPrimitive.Portal>
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
+          role="presentation"
           className={cn(
-            'relative flex w-full flex-col bg-card',
-            borderClass,
-            side === 'right' ? 'border-border/80' : 'border-border/70 shadow-2xl',
-            side === 'left' ? 'animate-slide-in-left' : 'animate-slide-in-right'
+            'fixed inset-0 bg-black/50 backdrop-blur-sm',
+            backdropClassName,
+          )}
+          style={zIndex ? { zIndex: zIndex - 1 } : { zIndex: 49 }}
+          onClick={onClose}
+        />
+        <DialogPrimitive.Content
+          onInteractOutside={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onEscapeKeyDown={() => onClose()}
+          style={zIndex ? { zIndex } : { zIndex: 50 }}
+          className={cn(
+            'fixed inset-y-0 flex w-full flex-col bg-background shadow-xl outline-none',
+            'duration-200',
+            side === 'right'
+              ? 'right-0 border-l data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right'
+              : 'left-0 border-r data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left',
+            widthClass,
           )}
         >
-          <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-            {title ? (
-              <div>
-                <span className="label-uppercase">DETAIL VIEW</span>
-                <h2 id={titleId} className="mt-1 text-lg font-semibold text-foreground">{title}</h2>
-              </div>
-            ) : <div />}
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card/80 text-secondary-text transition-colors hover:bg-hover hover:text-foreground"
+          {title ? (
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <DialogPrimitive.Title className="text-foreground text-lg font-semibold">
+                {title}
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Close
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                aria-label={t('common.closeDrawer')}
+              >
+                <X className="h-4 w-4" />
+              </DialogPrimitive.Close>
+            </div>
+          ) : (
+            <DialogPrimitive.Close
+              className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               aria-label={t('common.closeDrawer')}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
+              <X className="h-4 w-4" />
+            </DialogPrimitive.Close>
+          )}
+          <DialogPrimitive.Description className="sr-only">
+            {title ?? ''}
+          </DialogPrimitive.Description>
+          <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };

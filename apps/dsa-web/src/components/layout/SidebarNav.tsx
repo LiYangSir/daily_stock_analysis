@@ -1,21 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, BarChart3, Bell, BriefcaseBusiness, Gauge, Home, LogOut, MessageSquareQuote, Search, Settings2 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-import { ALPHASIFT_CONFIG_CHANGED_EVENT, SYSTEM_CONFIG_CHANGED_EVENT, alphasiftApi } from '../../api/alphasift';
+import {
+  Activity,
+  BarChart3,
+  Bell,
+  BriefcaseBusiness,
+  Gauge,
+  Home,
+  LogOut,
+  MessageSquareQuote,
+  Monitor,
+  Moon,
+  Search,
+  Settings2,
+  Sun,
+} from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useTheme } from 'next-themes';
+
+import {
+  ALPHASIFT_CONFIG_CHANGED_EVENT,
+  SYSTEM_CONFIG_CHANGED_EVENT,
+  alphasiftApi,
+} from '../../api/alphasift';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAgentChatStore } from '../../stores/agentChatStore';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
 import type { UiTextKey } from '../../i18n/uiText';
 import { cn } from '../../utils/cn';
 import { ConfirmDialog } from '../common/ConfirmDialog';
-import { StatusDot } from '../common/StatusDot';
-import { UiLanguageToggle } from '../i18n/UiLanguageToggle';
-import { ThemeToggle } from '../theme/ThemeToggle';
+import { Logo } from './Logo';
+import {
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type SidebarNavProps = {
-  collapsed?: boolean;
   onNavigate?: () => void;
-  variant?: 'default' | 'rail';
+  /**
+   * @deprecated Kept for legacy callers/tests. Real collapsed state comes from the SidebarProvider.
+   */
+  collapsed?: boolean;
 };
 
 type NavItem = {
@@ -25,47 +65,58 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   exact?: boolean;
   badge?: 'completion';
+  group: 'workspace' | 'analysis' | 'account' | 'system';
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'home', labelKey: 'layout.nav.home', to: '/', icon: Home, exact: true },
-  { key: 'chat', labelKey: 'layout.nav.chat', to: '/chat', icon: MessageSquareQuote, badge: 'completion' },
-  { key: 'screening', labelKey: 'layout.nav.screening', to: '/screening', icon: Search },
-  { key: 'portfolio', labelKey: 'layout.nav.portfolio', to: '/portfolio', icon: BriefcaseBusiness },
-  { key: 'decision-signals', labelKey: 'layout.nav.decisionSignals', to: '/decision-signals', icon: Activity },
-  { key: 'backtest', labelKey: 'layout.nav.backtest', to: '/backtest', icon: BarChart3 },
-  { key: 'alerts', labelKey: 'layout.nav.alerts', to: '/alerts', icon: Bell },
-  { key: 'usage', labelKey: 'layout.nav.usage', to: '/usage', icon: Gauge },
-  { key: 'settings', labelKey: 'layout.nav.settings', to: '/settings', icon: Settings2 },
+  { key: 'home', labelKey: 'layout.nav.home', to: '/', icon: Home, exact: true, group: 'workspace' },
+  { key: 'chat', labelKey: 'layout.nav.chat', to: '/chat', icon: MessageSquareQuote, badge: 'completion', group: 'workspace' },
+  { key: 'screening', labelKey: 'layout.nav.screening', to: '/screening', icon: Search, group: 'workspace' },
+  { key: 'portfolio', labelKey: 'layout.nav.portfolio', to: '/portfolio', icon: BriefcaseBusiness, group: 'workspace' },
+  { key: 'decision-signals', labelKey: 'layout.nav.decisionSignals', to: '/decision-signals', icon: Activity, group: 'workspace' },
+  { key: 'backtest', labelKey: 'layout.nav.backtest', to: '/backtest', icon: BarChart3, group: 'analysis' },
+  { key: 'alerts', labelKey: 'layout.nav.alerts', to: '/alerts', icon: Bell, group: 'analysis' },
+  { key: 'usage', labelKey: 'layout.nav.usage', to: '/usage', icon: Gauge, group: 'account' },
+  { key: 'settings', labelKey: 'layout.nav.settings', to: '/settings', icon: Settings2, group: 'system' },
 ];
 
-export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNavigate, variant = 'default' }) => {
+const GROUP_LABELS: Record<NavItem['group'], UiTextKey | string> = {
+  workspace: '工作台',
+  analysis: '分析',
+  account: '账户',
+  system: '系统',
+};
+
+const GROUP_LABELS_EN: Record<NavItem['group'], string> = {
+  workspace: 'Workspace',
+  analysis: 'Analysis',
+  account: 'Account',
+  system: 'System',
+};
+
+export const SidebarNav: React.FC<SidebarNavProps> = ({ onNavigate }) => {
   const { authEnabled, logout } = useAuth();
-  const { t } = useUiLanguage();
+  const { t, language, setLanguage } = useUiLanguage();
   const completionBadge = useAgentChatStore((state) => state.completionBadge);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAlphaSiftNav, setShowAlphaSiftNav] = useState(false);
+  const { setOpenMobile, isMobile, state } = useSidebar();
+  const location = useLocation();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     let active = true;
-
     const refreshAlphaSiftStatus = async () => {
       try {
         const status = await alphasiftApi.getStatus();
-        if (active) {
-          setShowAlphaSiftNav(status.enabled);
-        }
+        if (active) setShowAlphaSiftNav(status.enabled);
       } catch {
-        if (active) {
-          setShowAlphaSiftNav(false);
-        }
+        if (active) setShowAlphaSiftNav(false);
       }
     };
-
     void refreshAlphaSiftStatus();
     window.addEventListener(ALPHASIFT_CONFIG_CHANGED_EVENT, refreshAlphaSiftStatus);
     window.addEventListener(SYSTEM_CONFIG_CHANGED_EVENT, refreshAlphaSiftStatus);
-
     return () => {
       active = false;
       window.removeEventListener(ALPHASIFT_CONFIG_CHANGED_EVENT, refreshAlphaSiftStatus);
@@ -73,117 +124,127 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
     };
   }, []);
 
-  const navItems = showAlphaSiftNav ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.key !== 'screening');
-  const isRail = variant === 'rail';
-  const itemBaseClass = cn(
-    'group relative flex h-[var(--nav-item-height)] w-full items-center overflow-hidden rounded-2xl border border-transparent text-sm leading-none text-secondary-text transition-all',
-    isRail
-      ? 'justify-center gap-2.5 px-2'
-      : collapsed
-        ? 'justify-center px-0'
-        : 'gap-3 px-[var(--nav-item-padding-x)]'
-  );
-  const itemInteractiveClass = cn(
-    itemBaseClass,
-    'hover:bg-[var(--nav-hover-bg)] hover:text-foreground'
-  );
-  const itemActiveClass = 'border-[var(--nav-active-border)] bg-[var(--nav-active-bg)] font-medium text-[hsl(var(--primary))]';
-  const itemIconClass = cn(isRail ? 'h-[18px] w-[18px]' : 'h-5 w-5', 'shrink-0');
-  const itemLabelClass = cn('truncate', isRail ? 'text-center' : '');
+  const navItems = showAlphaSiftNav
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.key !== 'screening');
+
+  const grouped = (['workspace', 'analysis', 'account', 'system'] as const).map((group) => ({
+    group,
+    items: navItems.filter((item) => item.group === group),
+  })).filter((g) => g.items.length > 0);
+
+  const handleNavigate = () => {
+    if (isMobile) setOpenMobile(false);
+    onNavigate?.();
+  };
+
+  const isItemActive = (item: NavItem) => {
+    if (item.exact) return location.pathname === item.to;
+    return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+  };
+
+  const visualTheme = resolvedTheme ?? 'light';
+  const ThemeIcon = visualTheme === 'light' ? Sun : Moon;
+  const collapsed = state === 'collapsed' && !isMobile;
 
   return (
-    <div className="flex h-full flex-col">
-      <div
-        className={cn(
-          'flex items-center',
-          isRail ? 'mb-5 justify-center gap-2 pt-1' : 'mb-4 gap-2 px-1',
-          collapsed || isRail ? 'justify-center' : ''
-        )}
-      >
-        <div
-          className={cn(
-            'flex items-center justify-center bg-primary-gradient text-[hsl(var(--primary-foreground))] shadow-[0_12px_28px_var(--nav-brand-shadow)]',
-            isRail ? 'h-9 w-9 rounded-[1rem]' : 'h-10 w-10 rounded-2xl'
-          )}
-        >
-          <BarChart3 className={cn(isRail ? 'h-[19px] w-[19px]' : 'h-5 w-5')} />
-        </div>
-        {!collapsed ? (
-          <p className={cn('min-w-0 truncate font-semibold text-foreground', isRail ? 'text-[0.95rem] leading-none' : 'text-sm')}>DSA</p>
-        ) : null}
-      </div>
+    <>
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-3.5">
+        <Logo hideText={collapsed} />
+      </SidebarHeader>
 
-      <nav className={cn('flex flex-col gap-1.5', isRail ? '' : 'flex-1')} aria-label={t('layout.mainNav')}>
-        {navItems.map(({ key, labelKey, to, icon: Icon, exact, badge }) => {
-          const label = t(labelKey);
-          return (
-          <NavLink
-            key={key}
-            to={to}
-            end={exact}
-            onClick={onNavigate}
-            aria-label={label}
-            className={({ isActive }) =>
-              cn(
-                itemInteractiveClass,
-                isActive ? itemActiveClass : ''
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon className={cn(itemIconClass, isActive ? 'text-[var(--nav-icon-active)]' : 'text-current')} />
-                {!collapsed ? <span className={itemLabelClass}>{label}</span> : null}
-                {badge === 'completion' && completionBadge ? (
-                  <StatusDot
-                    tone="info"
-                    data-testid="chat-completion-badge"
-                    className={cn(
-                      'absolute right-3 border-2 border-background shadow-[0_0_10px_var(--nav-indicator-shadow)]',
-                      collapsed ? 'right-2 top-2' : ''
-                    )}
-                    aria-label={t('layout.newChatMessage')}
-                  />
-                ) : null}
-              </>
-            )}
-          </NavLink>
-        );
-        })}
+      <SidebarContent>
+        <nav aria-label={t('layout.mainNav')} className="contents">
+          {grouped.map(({ group, items }) => (
+            <SidebarGroup key={group}>
+            <SidebarGroupLabel>
+              {language === 'en' ? GROUP_LABELS_EN[group] : GROUP_LABELS[group]}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const label = t(item.labelKey);
+                  const active = isItemActive(item);
+                  return (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={label}
+                      >
+                        <NavLink to={item.to} onClick={handleNavigate} end={item.exact} aria-label={label}>
+                          <Icon className="h-4 w-4" />
+                          <span>{label}</span>
+                          {item.badge === 'completion' && completionBadge ? (
+                            <span
+                              data-testid="chat-completion-badge"
+                              aria-label={t('layout.newChatMessage')}
+                              className="ml-auto h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px_var(--sidebar)]"
+                            />
+                          ) : null}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          ))}
+        </nav>
+      </SidebarContent>
 
-        <ThemeToggle
-          variant={isRail ? 'rail' : 'nav'}
-          collapsed={collapsed}
-          wrapperClassName="w-full"
-          triggerClassName={itemInteractiveClass}
-          triggerActiveClassName={itemActiveClass}
-          iconClassName={itemIconClass}
-          labelClassName={itemLabelClass}
-        />
-        <UiLanguageToggle
-          variant={isRail ? 'rail' : 'nav'}
-          collapsed={collapsed}
-          wrapperClassName="w-full"
-          triggerClassName={itemInteractiveClass}
-          triggerActiveClassName={itemActiveClass}
-          iconClassName={itemIconClass}
-          labelClassName={itemLabelClass}
-        />
-      </nav>
-
-      {authEnabled ? (
-        <button
-          type="button"
-          onClick={() => setShowLogoutConfirm(true)}
-          className={cn(
-            itemInteractiveClass,
-            isRail ? 'mt-1.5' : 'mt-5'
-          )}
-        >
-          <LogOut className={itemIconClass} />
-          {!collapsed ? <span className={itemLabelClass}>{t('layout.logout')}</span> : null}
-        </button>
-      ) : null}
+      <SidebarFooter className="gap-1 border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton tooltip={t('theme.theme')}>
+                  <ThemeIcon className="h-4 w-4" />
+                  <span>{t('theme.theme')}</span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="min-w-[8rem]">
+                <DropdownMenuLabel>{t('theme.menu')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTheme('light')} className={cn(theme === 'light' && 'bg-accent')}>
+                  <Sun className="h-4 w-4" />
+                  <span>{t('theme.light')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')} className={cn(theme === 'dark' && 'bg-accent')}>
+                  <Moon className="h-4 w-4" />
+                  <span>{t('theme.dark')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('system')} className={cn(theme === 'system' && 'bg-accent')}>
+                  <Monitor className="h-4 w-4" />
+                  <span>{t('theme.system')}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+              tooltip={t('language.uiLanguage')}
+            >
+              <Globe2Icon />
+              <span>{language === 'zh' ? t('language.current') : t('language.english')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {authEnabled ? (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setShowLogoutConfirm(true)}
+                tooltip={t('layout.logout')}
+              >
+                <LogOut className="h-4 w-4" />
+                <span>{t('layout.logout')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ) : null}
+        </SidebarMenu>
+      </SidebarFooter>
 
       <ConfirmDialog
         isOpen={showLogoutConfirm}
@@ -199,6 +260,29 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
         }}
         onCancel={() => setShowLogoutConfirm(false)}
       />
-    </div>
+    </>
   );
 };
+
+function Globe2Icon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden
+    >
+      <path d="M21.54 15H17a2 2 0 0 0-2 2v4.54" />
+      <path d="M7 3.34V5a3 3 0 0 0 3 3v0a2 2 0 0 1 2 2v0c0 1.1.9 2 2 2v0a2 2 0 0 0 2-2v0c0-1.1.9-2 2-2h3.17" />
+      <path d="M11 21.95V18a2 2 0 0 0-2-2v0a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05" />
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}

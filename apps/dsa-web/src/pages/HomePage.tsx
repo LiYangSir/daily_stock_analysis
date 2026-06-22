@@ -70,17 +70,14 @@ const HomePage: React.FC = () => {
   }, []);
 
   const scrollMarketReviewFeedbackIntoView = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const scrollContainer = dashboardScrollRef.current;
-    if (!scrollContainer) {
-      return;
+    if (scrollContainer) {
+      scrollContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    if (typeof scrollContainer.scrollTo === 'function') {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    scrollContainer.scrollTop = 0;
   }, []);
 
   useEffect(() => stopMarketReviewPolling, [stopMarketReviewPolling]);
@@ -656,9 +653,9 @@ const HomePage: React.FC = () => {
   return (
     <div
       data-testid="home-dashboard"
-      className="flex h-[calc(100vh-5rem)] w-full flex-col overflow-hidden md:flex-row sm:h-[calc(100vh-5.5rem)] lg:h-[calc(100vh-2rem)]"
+      className="flex w-full flex-col md:flex-row"
     >
-      <div className="flex-1 flex flex-col min-h-0 min-w-0 max-w-full lg:max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full">
         <header className="relative z-30 flex min-w-0 flex-shrink-0 items-center overflow-visible px-3 py-3 md:px-4 md:py-4">
           <div className="flex min-w-0 flex-1 flex-col gap-2.5 md:flex-row md:items-center">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -846,7 +843,7 @@ const HomePage: React.FC = () => {
           <section
             ref={dashboardScrollRef}
             data-testid="home-dashboard-scroll"
-            className="flex-1 min-w-0 min-h-0 overflow-x-auto overflow-y-auto px-3 pb-4 md:px-6 touch-pan-y"
+            className="flex-1 min-w-0 px-3 pb-4 md:px-6"
           >
             {marketReviewNotice ? (
               <div className="mb-3">
@@ -890,7 +887,7 @@ const HomePage: React.FC = () => {
                 <DashboardStateBlock title={t('home.loadingReport')} loading />
               </div>
             ) : !marketReviewReport && selectedReport ? (
-              <div className={isHistoryTrendOpen ? 'max-w-6xl space-y-4 pb-8' : 'max-w-4xl space-y-4 pb-8'}>
+              <div className="space-y-4 pb-8">
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {!isMarketReviewHistoryReport ? (
                     <>

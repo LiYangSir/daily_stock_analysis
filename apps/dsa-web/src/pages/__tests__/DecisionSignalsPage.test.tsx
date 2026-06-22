@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decisionSignalsApi } from '../../api/decisionSignals';
 import { UiLanguageProvider } from '../../contexts/UiLanguageContext';
 import type {
@@ -163,6 +163,10 @@ beforeEach(() => {
     source: 'web',
   });
   vi.mocked(decisionSignalsApi.updateStatus).mockResolvedValue({ ...signal, status: 'invalidated' });
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 describe('DecisionSignalsPage', () => {

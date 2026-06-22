@@ -1,13 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+
 import { SidebarNav } from '../SidebarNav';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 const mockLogout = vi.fn().mockResolvedValue(undefined);
 const mockGetAlphaSiftStatus = vi.fn().mockResolvedValue({ enabled: false, available: false, installSpecIsDefault: false });
-const mockThemeToggle = vi.fn(({ collapsed }: { collapsed?: boolean }) => (
-  <button type="button">{collapsed ? '切换主题(折叠)' : '切换主题'}</button>
-));
 
 const completionBadgeState = { value: true };
 
@@ -31,44 +30,32 @@ vi.mock('../../../api/alphasift', () => ({
   },
 }));
 
-vi.mock('../../theme/ThemeToggle', () => ({
-  ThemeToggle: (props: { collapsed?: boolean }) => mockThemeToggle(props),
-}));
+function renderSidebar(initialPath: string) {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <SidebarProvider defaultOpen>
+        <SidebarNav />
+      </SidebarProvider>
+    </MemoryRouter>,
+  );
+}
 
 describe('SidebarNav', () => {
   it('hides the screening navigation item while AlphaSift is disabled', () => {
     mockGetAlphaSiftStatus.mockResolvedValueOnce({ enabled: false, available: false, installSpecIsDefault: false });
-
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
-
+    renderSidebar('/');
     expect(screen.queryByRole('link', { name: '选股' })).not.toBeInTheDocument();
   });
 
   it('shows the screening navigation item when AlphaSift is enabled', async () => {
     mockGetAlphaSiftStatus.mockResolvedValueOnce({ enabled: true, available: false, installSpecIsDefault: false });
-
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
-
+    renderSidebar('/');
     expect(await screen.findByRole('link', { name: '选股' })).toHaveAttribute('href', '/screening');
   });
 
   it('places screening directly after chat when AlphaSift is enabled', async () => {
     mockGetAlphaSiftStatus.mockResolvedValueOnce({ enabled: true, available: false, installSpecIsDefault: false });
-
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
-
+    renderSidebar('/');
     await screen.findByRole('link', { name: '选股' });
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'));
     expect(hrefs.slice(0, 5)).toEqual(['/', '/chat', '/screening', '/portfolio', '/decision-signals']);
@@ -79,11 +66,7 @@ describe('SidebarNav', () => {
       .mockResolvedValueOnce({ enabled: false, available: false, installSpecIsDefault: false })
       .mockResolvedValueOnce({ enabled: true, available: false, installSpecIsDefault: false });
 
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
+    renderSidebar('/');
 
     expect(screen.queryByRole('link', { name: '选股' })).not.toBeInTheDocument();
     window.dispatchEvent(new Event('dsa-system-config-changed'));
@@ -95,11 +78,7 @@ describe('SidebarNav', () => {
   it('shows the shared completion badge only when chat completion is pending', () => {
     completionBadgeState.value = true;
 
-    const { rerender } = render(
-      <MemoryRouter initialEntries={['/chat']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
+    const { rerender } = renderSidebar('/chat');
 
     expect(screen.getByTestId('chat-completion-badge')).toBeInTheDocument();
     expect(screen.getByLabelText('问股有新消息')).toBeInTheDocument();
@@ -107,56 +86,31 @@ describe('SidebarNav', () => {
     completionBadgeState.value = false;
     rerender(
       <MemoryRouter initialEntries={['/chat']}>
-        <SidebarNav />
+        <SidebarProvider defaultOpen>
+          <SidebarNav />
+        </SidebarProvider>
       </MemoryRouter>,
     );
 
     expect(screen.queryByTestId('chat-completion-badge')).not.toBeInTheDocument();
   });
 
-  it('renders the collapsed theme toggle variant when the sidebar is collapsed', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <SidebarNav collapsed />
-      </MemoryRouter>,
-    );
-
-    expect(mockThemeToggle).toHaveBeenCalledWith(
-      expect.objectContaining({ variant: 'nav', collapsed: true }),
-    );
-    expect(screen.getByRole('button', { name: '切换主题(折叠)' })).toBeInTheDocument();
-  });
-
   it('renders the alerts navigation item and marks it active', () => {
-    render(
-      <MemoryRouter initialEntries={['/alerts']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
-
+    renderSidebar('/alerts');
     const alertsLink = screen.getByRole('link', { name: '告警' });
     expect(alertsLink).toHaveAttribute('href', '/alerts');
-    expect(alertsLink).toHaveClass('font-medium');
+    expect(alertsLink).toHaveAttribute('data-active', 'true');
   });
 
   it('renders the AI signals navigation item and marks it active', () => {
-    render(
-      <MemoryRouter initialEntries={['/decision-signals']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
-
+    renderSidebar('/decision-signals');
     const signalsLink = screen.getByRole('link', { name: 'AI 建议' });
     expect(signalsLink).toHaveAttribute('href', '/decision-signals');
-    expect(signalsLink).toHaveClass('font-medium');
+    expect(signalsLink).toHaveAttribute('data-active', 'true');
   });
 
   it('opens the logout confirmation and confirms logout', async () => {
-    render(
-      <MemoryRouter initialEntries={['/chat']}>
-        <SidebarNav />
-      </MemoryRouter>,
-    );
+    renderSidebar('/chat');
 
     fireEvent.click(screen.getByRole('button', { name: '退出' }));
 

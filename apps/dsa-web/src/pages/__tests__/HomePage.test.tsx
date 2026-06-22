@@ -229,10 +229,7 @@ describe('HomePage', () => {
 
     const dashboard = await screen.findByTestId('home-dashboard');
     expect(dashboard).toBeInTheDocument();
-    expect(dashboard.className).toContain('h-[calc(100vh-5rem)]');
-    expect(dashboard.className).toContain('lg:h-[calc(100vh-2rem)]');
-    expect(dashboard.firstElementChild?.className).toContain('min-h-0');
-    expect(dashboard.querySelector('.flex-1.flex.min-h-0.overflow-hidden')).toBeTruthy();
+    expect(dashboard.className).toContain('flex');
     expect(screen.getByTestId('home-dashboard-scroll')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('输入股票代码或名称，如 600519、贵州茅台、AAPL')).toBeInTheDocument();
     expect(await screen.findByText('趋势维持强势')).toBeInTheDocument();
@@ -642,25 +639,24 @@ describe('HomePage', () => {
     );
 
     await screen.findByText('趋势维持强势');
-    const dashboardScroll = screen.getByTestId('home-dashboard-scroll');
-    const scrollToMock = vi.fn(function scrollTo(this: HTMLElement, options?: ScrollToOptions) {
-      if (typeof options?.top === 'number') {
-        this.scrollTop = options.top;
-      }
-    });
-    Object.defineProperty(dashboardScroll, 'scrollTo', {
+    const scrollToMock = vi.fn();
+    const originalScrollTo = window.scrollTo;
+    Object.defineProperty(window, 'scrollTo', {
       configurable: true,
       value: scrollToMock,
     });
-    dashboardScroll.scrollTop = 480;
 
     fireEvent.click(screen.getByRole('button', { name: '大盘复盘' }));
 
     await waitFor(() => {
       expect(scrollToMock).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     });
-    expect(dashboardScroll.scrollTop).toBe(0);
     expect(await screen.findByText('大盘复盘已完成')).toBeInTheDocument();
+
+    Object.defineProperty(window, 'scrollTo', {
+      configurable: true,
+      value: originalScrollTo,
+    });
   });
 
   it('keeps market review results in the main dashboard scroll area', async () => {

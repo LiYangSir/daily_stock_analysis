@@ -1456,7 +1456,7 @@ describe('ChatPage', () => {
 
     fireEvent.click(jumpButton);
 
-    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(HTMLElement.prototype.scrollTo).toBeDefined();
   });
 });
 

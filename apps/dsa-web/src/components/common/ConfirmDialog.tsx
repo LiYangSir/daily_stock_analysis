@@ -1,5 +1,17 @@
+import { useRef } from 'react';
 import type React from 'react';
-import { createPortal } from 'react-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '../../utils/cn';
 import { useUiLanguage } from '../../contexts/UiLanguageContext';
 
 interface ConfirmDialogProps {
@@ -16,8 +28,8 @@ interface ConfirmDialogProps {
 }
 
 /**
- * Generic confirmation dialog component.
- * Style is consistent with ChatPage.
+ * Legacy ConfirmDialog API backed by shadcn/ui AlertDialog. Preserves prop names
+ * and behavior used across the app while picking up the new design language.
  */
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isOpen,
@@ -32,51 +44,47 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
 }) => {
   const { t } = useUiLanguage();
+  const justConfirmedRef = useRef(false);
 
-  if (!isOpen) return null;
-
-  const dialog = (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all"
-      onClick={() => {
+  return (
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open) return;
+        if (justConfirmedRef.current) {
+          justConfirmedRef.current = false;
+          return;
+        }
         if (!cancelDisabled) {
           onCancel();
         }
       }}
     >
-      <div
-        className="mx-4 w-full max-w-sm rounded-xl border border-border/70 bg-elevated p-6 shadow-2xl animate-in fade-in zoom-in duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-2 text-lg font-medium text-foreground">{title}</h3>
-        <p className="text-sm text-secondary-text mb-6 leading-relaxed">
-          {message}
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={cancelDisabled}
-            className="rounded-lg border border-border/70 px-4 py-2 text-sm font-medium text-secondary-text transition-colors hover:bg-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-          >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{message}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={cancelDisabled}>
             {cancelText ?? t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
+          </AlertDialogCancel>
+          <AlertDialogAction
             disabled={confirmDisabled}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-foreground transition-colors ${
+            onClick={() => {
+              justConfirmedRef.current = true;
+              onConfirm();
+            }}
+            className={cn(
               isDanger
-                ? 'bg-red-500/80 hover:bg-red-500 shadow-lg shadow-red-500/20'
-                : 'bg-cyan/80 hover:bg-cyan shadow-lg shadow-cyan/20'
-            } disabled:cursor-not-allowed disabled:opacity-60`}
+                ? buttonVariants({ variant: 'destructive' })
+                : buttonVariants({ variant: 'default' }),
+            )}
           >
             {confirmText ?? t('common.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
-
-  return createPortal(dialog, document.body);
 };

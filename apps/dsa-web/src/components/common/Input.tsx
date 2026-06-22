@@ -139,10 +139,10 @@ export const Input = ({
           style={inputStyle}
           data-appearance={appearance}
           className={cn(
-            'input-surface input-focus-glow h-11 w-full rounded-xl border bg-transparent px-4 text-sm transition-all',
-            'focus:outline-none',
-            isLoginAppearance ? 'input-appearance-login' : '',
-            error ? 'border-danger/30' : '',
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-colors',
+            'placeholder:text-muted-foreground',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            error ? 'border-destructive focus-visible:ring-destructive' : '',
             leadingIcon ? 'pl-10' : '',
             finalTrailingAction ? 'pr-12' : '',
             'disabled:cursor-not-allowed disabled:opacity-60',

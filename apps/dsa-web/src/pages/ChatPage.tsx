@@ -317,7 +317,9 @@ const ChatPage: React.FC = () => {
   }, []);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    const viewport = messagesViewportRef.current;
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior });
   }, []);
 
   const requestScrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {

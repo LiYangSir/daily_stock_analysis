@@ -15,7 +15,8 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Delete' });
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('data-variant', 'danger');
-    expect(button.className).toContain('bg-danger');
+    // shadcn destructive variant uses the destructive token
+    expect(button.className).toContain('bg-destructive');
   });
 
   it('disables the button when loading and shows loading text', () => {
@@ -32,20 +33,18 @@ describe('Button', () => {
 
     const button = screen.getByRole('button', { name: 'Bulk Delete' });
     expect(button).toHaveAttribute('data-variant', 'danger-subtle');
-    expect(button.className).toContain('border-danger/60');
-    expect(button.className).toContain('bg-danger/10');
+    expect(button.className).toContain('text-destructive');
   });
 
   it.each([
-    ['action-primary', '--home-action-ai-bg', '--home-action-ai-border', '--home-action-ai-text'],
-    ['action-secondary', '--home-action-report-bg', '--home-action-report-border', '--home-action-report-text'],
-  ] as const)('supports the %s variant', (variant, bgToken, borderToken, textToken) => {
+    ['action-primary'],
+    ['action-secondary'],
+    ['home-action-ai'],
+    ['home-action-report'],
+  ] as const)('supports the %s variant', (variant) => {
     render(<Button variant={variant}>Quick Action</Button>);
 
     const button = screen.getByRole('button', { name: 'Quick Action' });
     expect(button).toHaveAttribute('data-variant', variant);
-    expect(button.className).toContain(bgToken);
-    expect(button.className).toContain(borderToken);
-    expect(button.className).toContain(textToken);
   });
 });

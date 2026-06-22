@@ -13,26 +13,23 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'border-border/55 bg-elevated/75 text-secondary-text',
-  success: 'border-success/20 bg-success/10 text-success',
-  warning: 'border-warning/20 bg-warning/10 text-warning',
-  danger: 'border-danger/20 bg-danger/10 text-danger',
-  info: 'border-cyan/30 bg-cyan/12 text-cyan',
-  history: 'border-purple/20 bg-purple/10 text-purple',
+  default: 'border-border bg-muted text-muted-foreground',
+  success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  warning: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  danger: 'border-destructive/30 bg-destructive/10 text-destructive',
+  info: 'border-primary/25 bg-primary/10 text-primary',
+  history: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300',
 };
 
 const glowStyles: Record<BadgeVariant, string> = {
   default: '',
-  success: 'shadow-success/20',
-  warning: 'shadow-warning/20',
-  danger: 'shadow-danger/20',
-  info: 'shadow-cyan/20',
-  history: 'shadow-purple/20',
+  success: 'shadow-emerald-500/20',
+  warning: 'shadow-amber-500/20',
+  danger: 'shadow-destructive/20',
+  info: 'shadow-primary/20',
+  history: 'shadow-indigo-500/20',
 };
 
-/**
- * Badge component with multiple variants and optional glow styling.
- */
 export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = 'default',
@@ -49,10 +46,10 @@ export const Badge: React.FC<BadgeProps> = ({
       {...rest}
       style={style}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border font-medium backdrop-blur-sm',
+        'inline-flex items-center gap-1 rounded-full border font-medium',
         sizeStyles,
         variantStyles[variant],
-        glow && `shadow-lg ${glowStyles[variant]}`,
+        glow && `shadow-sm ${glowStyles[variant]}`,
         className,
       )}
     >
