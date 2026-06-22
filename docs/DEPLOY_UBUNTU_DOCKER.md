@@ -178,19 +178,153 @@ sudo certbot --nginx -d your.domain.com
 
 ## 9. 升级 / 维护
 
+升级时遵循 **「先备份 → 再拉代码 → 重建镜像 → 滚动重启 → 验证 → 失败回滚」** 的顺序。
+
+### 9.1 升级前准备
+
 ```bash
 cd /opt/daily_stock_analysis
 
-# 拉新代码 + 重新构建镜像 + 滚动重启
+# 1) 记录当前版本（用于回滚）
+git rev-parse --short HEAD | tee /tmp/dsa-prev-rev.txt
+docker compose -f docker/docker-compose.yml ps
+
+# 2) 备份关键数据 + .env（即便 volume 在宿主机，也建议归档）
+sudo tar czf "/opt/dsa-backup-$(date +%F-%H%M).tgz" \
+  /opt/daily_stock_analysis/.env \
+  /opt/daily_stock_analysis/data \
+  /opt/daily_stock_analysis/reports \
+  /opt/daily_stock_analysis/logs \
+  /opt/daily_stock_analysis/longbridge_tokens
+ls -lh /opt/dsa-backup-*.tgz | tail -3
+```
+
+### 9.2 仅修改了 `.env`（不需要重建）
+
+```bash
+# 改完 .env 后只需重启即可，不会重新构建镜像，秒级生效
+docker compose -f docker/docker-compose.yml restart server
+docker compose -f docker/docker-compose.yml logs --tail=50 server
+```
+
+少数配置（端口、数据库路径、调度器开关）需要 down/up 才能完全应用：
+
+```bash
+docker compose -f docker/docker-compose.yml down
+docker compose -f docker/docker-compose.yml up -d server
+```
+
+### 9.3 升级到上游最新版本（含代码改动）
+
+```bash
+cd /opt/daily_stock_analysis
+
+# 1) 拉取最新代码（fast-forward，避免引入冲突分支）
+git fetch --all --prune
+git pull --ff-only
+
+# 2) 重新构建镜像（--pull 拉取最新基础镜像，--no-cache 可强制干净构建）
+docker compose -f docker/docker-compose.yml build --pull
+# 如果想完全干净：
+# docker compose -f docker/docker-compose.yml build --pull --no-cache
+
+# 3) 滚动重启（compose 会复用 volume，数据保留）
+docker compose -f docker/docker-compose.yml up -d server
+
+# 4) 健康检查
+sleep 5
+curl -fsS http://127.0.0.1:8000/api/v1/health && echo "OK"
+docker compose -f docker/docker-compose.yml logs --tail=80 server
+```
+
+### 9.4 锁定版本升级（推荐生产）
+
+直接 `git pull` 等于跟着 main 走，生产环境推荐跟踪 release tag：
+
+```bash
+# 列出最近 5 个 release
+git tag --sort=-creatordate | head -5
+
+# 升级到指定 tag
+git fetch --tags
+git checkout v3.21.0           # 替换为目标版本
+docker compose -f docker/docker-compose.yml build --pull
+docker compose -f docker/docker-compose.yml up -d server
+```
+
+切回主干：
+
+```bash
+git checkout main
+git pull --ff-only
+```
+
+### 9.5 升级失败回滚
+
+```bash
+cd /opt/daily_stock_analysis
+
+# 1) 回退代码到升级前的提交
+PREV_REV=$(cat /tmp/dsa-prev-rev.txt)
+git checkout "$PREV_REV"
+
+# 2) 重建旧版本镜像
+docker compose -f docker/docker-compose.yml build
+docker compose -f docker/docker-compose.yml up -d server
+
+# 3) 如果 .env / 数据也被破坏，从备份恢复
+# sudo tar xzf /opt/dsa-backup-YYYY-MM-DD-HHMM.tgz -C /
+# docker compose -f docker/docker-compose.yml restart server
+```
+
+### 9.6 镜像与磁盘清理（建议每次升级后跑一次）
+
+```bash
+# 移除悬空 layer / 旧镜像 / 退出的容器
+docker image prune -f
+docker container prune -f
+docker builder prune -f
+
+# 查看当前占用
+docker system df
+```
+
+### 9.7 升级前后冒烟项（建议手动过一遍）
+
+- [ ] WebUI 首页可登录、自选股报告能加载
+- [ ] 「设置 → 通知」点 “发送测试” 至少一个渠道返回成功
+- [ ] 「设置 → LLM 渠道」执行一次 “测试连通性”
+- [ ] `/chat` 输入一条问题能拿到流式回复
+- [ ] 浏览器 DevTools 控制台没有 4xx/5xx 红色报错
+- [ ] `docker compose ... logs --tail=200 server` 没有 ERROR 级别异常
+
+### 9.8 自动化建议
+
+对长期维护的部署，可以把上面的步骤写成脚本：
+
+```bash
+sudo tee /usr/local/bin/dsa-upgrade <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+cd /opt/daily_stock_analysis
+PREV=$(git rev-parse --short HEAD)
+echo "$PREV" >/tmp/dsa-prev-rev.txt
+sudo tar czf "/opt/dsa-backup-$(date +%F-%H%M).tgz" .env data reports logs longbridge_tokens
+git fetch --all --prune
 git pull --ff-only
 docker compose -f docker/docker-compose.yml build --pull
 docker compose -f docker/docker-compose.yml up -d server
+sleep 5
+curl -fsS http://127.0.0.1:8000/api/v1/health
+echo "Upgrade OK (was $PREV → $(git rev-parse --short HEAD))"
+EOF
+sudo chmod +x /usr/local/bin/dsa-upgrade
+```
 
-# 查看版本
-docker compose -f docker/docker-compose.yml exec server python -c "import importlib.metadata as m; print(m.version('daily_stock_analysis'))" 2>/dev/null || true
+之后升级只需一行：
 
-# 仅修改了 .env 时，无需 build，直接重启即可
-docker compose -f docker/docker-compose.yml restart server
+```bash
+sudo dsa-upgrade
 ```
 
 ---
