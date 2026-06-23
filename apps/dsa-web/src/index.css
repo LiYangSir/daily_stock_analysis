@@ -437,48 +437,40 @@
  * ============================================================ */
 .session-item-row {
   position: relative;
-  display: flex;
-  align-items: stretch;
-  gap: 0.25rem;
-}
-.session-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 0.75rem;
   border-radius: calc(var(--radius) - 2px);
-  background: transparent;
   border: 1px solid transparent;
-  color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
+  background: transparent;
   transition:
     background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
-  min-width: 0;
+    border-color 120ms ease;
 }
-.session-item:hover,
-.session-item:focus-visible {
+.session-item-row:hover,
+.session-item-row:focus-within {
   background: var(--accent);
   border-color: var(--border);
-  outline: none;
 }
-.session-item.active {
+.session-item-row.active {
   background: color-mix(in oklab, var(--primary) 10%, transparent);
   border-color: color-mix(in oklab, var(--primary) 40%, transparent);
 }
-.session-item .indicator {
-  width: 3px;
-  align-self: stretch;
-  border-radius: 2px;
+.session-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  /* leave room on the right for the absolutely positioned delete button */
+  padding-right: 2.5rem;
   background: transparent;
-  flex-shrink: 0;
-  transition: background-color 120ms ease;
+  border: none;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  border-radius: inherit;
+  min-width: 0;
 }
-.session-item.active .indicator {
-  background: var(--primary);
+.session-item:focus-visible {
+  outline: none;
 }
 .session-item .content {
   flex: 1;
@@ -493,7 +485,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.session-item.active .title {
+.session-item-row.active .session-item .title {
   color: var(--primary);
 }
 .session-item .meta {
@@ -509,16 +501,22 @@
   opacity: 0.5;
 }
 .session-item-row .delete-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.375rem;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  border-radius: calc(var(--radius) - 2px);
+  height: 1.75rem;
+  width: 1.75rem;
+  border-radius: calc(var(--radius) - 4px);
   background: transparent;
   color: var(--muted-foreground);
   border: 1px solid transparent;
   cursor: pointer;
   opacity: 0;
+  pointer-events: none;
   transition:
     opacity 120ms ease,
     background-color 120ms ease,
@@ -529,10 +527,11 @@
 .session-item-row:focus-within .delete-btn,
 .session-item-row .delete-btn:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 .session-item-row .delete-btn:hover,
 .session-item-row .delete-btn:focus-visible {
-  background: color-mix(in oklab, var(--destructive) 10%, transparent);
+  background: color-mix(in oklab, var(--destructive) 12%, transparent);
   color: var(--destructive);
   border-color: color-mix(in oklab, var(--destructive) 35%, transparent);
   outline: none;

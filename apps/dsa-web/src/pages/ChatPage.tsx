@@ -812,15 +812,17 @@ const ChatPage: React.FC = () => {
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => (
-              <div key={s.session_id} className="session-item-row">
+              <div
+                key={s.session_id}
+                className={`session-item-row${s.session_id === sessionId ? ' active' : ''}`}
+              >
                 <button
                   type="button"
                   onClick={() => handleSwitchSession(s.session_id)}
-                  className={`session-item ${s.session_id === sessionId ? 'active' : ''}`}
+                  className="session-item"
                   aria-label={`切换到对话 ${s.title}`}
                   aria-current={s.session_id === sessionId ? 'page' : undefined}
                 >
-                  <div className="indicator" />
                   <div className="content">
                     <span className="title">{s.title}</span>
                     <div className="mt-0.5 flex items-center gap-2">
