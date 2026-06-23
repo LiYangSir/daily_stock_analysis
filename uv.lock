@@ -472,7 +472,7 @@ requires-dist = [
     { name = "json-repair", specifier = ">=0.55.1" },
     { name = "lark-oapi", specifier = ">=1.0.0" },
     { name = "litellm", specifier = ">=1.80.10,!=1.82.7,!=1.82.8,<2.0.0" },
-    { name = "longbridge", specifier = ">=0.2.77" },
+    { name = "longbridge", specifier = ">=0.2.77,<4" },
     { name = "lxml-html-clean" },
     { name = "markdown2", specifier = ">=2.4.0" },
     { name = "newspaper3k", specifier = ">=0.2.8" },
@@ -1091,23 +1091,16 @@ wheels = [
 
 [[package]]
 name = "longbridge"
-version = "4.3.2"
+version = "0.2.77"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/b3/0b7c4aee282522ae81ed437908d18b8e64fe03a73de8959f33d714eb6cea/longbridge-0.2.77.tar.gz", hash = "sha256:f8d82fd2dcedd14e15995437880499514786bec50b75fe5699645bbff26c6106", size = 329220, upload-time = "2023-11-07T09:00:44.022Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/8b/89f9db3183c7048911c336f57ec2760099e6665dc3720cbceb50ffc05fcf/longbridge-4.3.2-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:2d298651f610b1e0881097fa1c298321d3f3e1edbe13642d1a1f0d17682a3f03", size = 10492902, upload-time = "2026-06-13T03:49:02.036Z" },
-    { url = "https://files.pythonhosted.org/packages/72/30/deb2f9c8304c71be90f2824fc37c39378bc8d602ae91ee9d4acc81efb9a0/longbridge-4.3.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:3e5093931d7e0c58fd9f428ee9bba5cce8723d20589e47c26100fb16d568b469", size = 10041094, upload-time = "2026-06-13T03:49:04.128Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/49/59be08c31cf74efb87fe7af3c80ef37ba67a31a3a7d42917be4e861d90c6/longbridge-4.3.2-cp311-cp311-manylinux_2_39_aarch64.whl", hash = "sha256:1c7654b83b8157fed1ec7ff389fa653c1ec46a966d64bea6729b35e271eb710a", size = 10468385, upload-time = "2026-06-13T03:49:06.204Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/91/d11d9fee04833546bddf58594cea3ab38b112bc2c545c9a0c62c2fa9164f/longbridge-4.3.2-cp311-cp311-manylinux_2_39_x86_64.whl", hash = "sha256:e2b1863960ab0dc6ade5123ae78c6efc9b693ddd48511ccf6aa2763fcc8de736", size = 10581228, upload-time = "2026-06-13T03:49:08.571Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/ef/cc13733ba670b593f22e09a405352efe2d3694534105b107ccbd0c04d2bd/longbridge-4.3.2-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:52a91b26cc2f0de66a1d933a7085b4a2f93bb662f30718a7503fac310b584643", size = 10633552, upload-time = "2026-06-13T03:49:10.622Z" },
-    { url = "https://files.pythonhosted.org/packages/ad/99/0ab19f056cda4ac3a4671ccd0d7c67318418d10d6a289d8939759aed3bf3/longbridge-4.3.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:8852c59804a300114122b492c33d09af64508d4e35085269d5dacbcf8876c647", size = 10837751, upload-time = "2026-06-13T03:49:12.729Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/48/dd7322602f3784106e19c9fff8b0015915e2d7626d32241ee7f822925f86/longbridge-4.3.2-cp311-cp311-win_amd64.whl", hash = "sha256:7986b4ffd437bbba8836cce90ef14b16a89516f9a814a7933b8d562f9c9c07ed", size = 11108297, upload-time = "2026-06-13T03:49:15.146Z" },
-    { url = "https://files.pythonhosted.org/packages/76/eb/ca48b94cfe2e5013e020734422d579fc25ba51a5803c0f4e03fff0548ffb/longbridge-4.3.2-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:4ea1a9d77626aed92505cd28f171d3bbf9fee8ba35368a32772efabb76b03e02", size = 10489068, upload-time = "2026-06-13T03:49:17.587Z" },
-    { url = "https://files.pythonhosted.org/packages/1c/92/e07dd3646a0a6d209901447dbc109ff3a374e0057125d53f73932d2f3774/longbridge-4.3.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:6ae121200f1d50b4efc7becad41065ab7c16b8ad3bb82c1aa23212f9ad1c943f", size = 10039192, upload-time = "2026-06-13T03:49:19.546Z" },
-    { url = "https://files.pythonhosted.org/packages/c2/b8/50b7fe500b4d1d47c268409cea00d096183e91f84721f7808529053f3225/longbridge-4.3.2-cp312-cp312-manylinux_2_39_aarch64.whl", hash = "sha256:698bca4604c7fd3dcafdc0354006688bda4b689e61df83780f11deaf34ed0dd5", size = 10475184, upload-time = "2026-06-13T03:49:21.806Z" },
-    { url = "https://files.pythonhosted.org/packages/d4/09/7fccedee7ccf409ae797a7a01e6c4f9197ac325e8f872040ba093f3bbc40/longbridge-4.3.2-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:a7e1d70affc6bad1923997711b4941a12847e98ca4c4228f0575fe1af75f6b65", size = 10585357, upload-time = "2026-06-13T03:49:23.729Z" },
-    { url = "https://files.pythonhosted.org/packages/1e/56/c9cfc775f03c00ae7b5264ff4ef972163cce72467770e27cdbdb4b7a7224/longbridge-4.3.2-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:ef36305101dfb86d1ba9b9d9b9fcdb2e637deb84e741ba76e465a138705ef7e7", size = 10640066, upload-time = "2026-06-13T03:49:25.811Z" },
-    { url = "https://files.pythonhosted.org/packages/51/c0/41d3fc1717bda00ca07f4df798fb7fcb0521b6fb961a48d18c8d915edcb9/longbridge-4.3.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:3c93d7650135336a187383c295e20cf065e44ae97bfd605db8bf01ad521ef4f8", size = 10840813, upload-time = "2026-06-13T03:49:27.736Z" },
-    { url = "https://files.pythonhosted.org/packages/76/19/850974fb27580eda02fc45930ce6a3004155c189f4e60e52a60955cf6ce9/longbridge-4.3.2-cp312-cp312-win_amd64.whl", hash = "sha256:971e272251872fa3b44e0a5c3ae3e9db7234a6ff516d2678c4393926564328b9", size = 11020816, upload-time = "2026-06-13T03:49:29.726Z" },
+    { url = "https://files.pythonhosted.org/packages/85/87/f1c713d348cc553e24faf67b205328d55a54061fdf41b2ae38ac46212dbf/longbridge-0.2.77-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:c87047298d7f5d75f7a4a892ed9fc3a6b8069514dd374900164a878663b35285", size = 4330591, upload-time = "2023-11-07T08:59:29.841Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/ce/eb9ec3cea4590365bde34a6bd3088000cc0adbdad3838d70ab74b049a4ca/longbridge-0.2.77-cp311-cp311-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:f2296385563db3cf4970fb56d86444f2582ebd3374ee1277cfa7c56ee76610e6", size = 5368580, upload-time = "2023-11-07T08:59:32.674Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/52/0b25d1438562fb31dcff26469bd528ac98118adceadc9f9c848c1db80b39/longbridge-0.2.77-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2693ec303cf50cb44ecc8b7747d2fea039d196f8054fae0b827666150430feb7", size = 5386357, upload-time = "2023-11-07T08:59:34.911Z" },
+    { url = "https://files.pythonhosted.org/packages/44/14/24032b441758d032c254daa06f31cdd6892f1c54b4fcf022f7433cd7b1a1/longbridge-0.2.77-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:0b8fc1936150643f441bc219769926f5ed418998596daac95444cacb01b10a3c", size = 4806621, upload-time = "2023-11-07T08:59:37.762Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/61/28f0d332589640e0f1a7f0e160381e4557c5aef14a0a15576d4025ccde1c/longbridge-0.2.77-cp311-none-win32.whl", hash = "sha256:38f0c4084e38b8f186f9f33020ccfc9b8d1382628c991aa4ba2b3b450d9fd3a8", size = 3400726, upload-time = "2023-11-07T08:59:40.117Z" },
+    { url = "https://files.pythonhosted.org/packages/dc/82/b4a4baabf70e83faff22b5d6932d5441b476d61722bf2a09d0abb1ed3a75/longbridge-0.2.77-cp311-none-win_amd64.whl", hash = "sha256:d80cf6e9d4b216dcb41eacfc54690efa1225f872fded2ae0e544e25a52a291ff", size = 3987802, upload-time = "2023-11-07T08:59:43.027Z" },
 ]
 
 [[package]]

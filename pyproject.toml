@@ -17,7 +17,7 @@ dependencies = [
     "pytdx>=1.72",
     "baostock>=0.8.0",
     "yfinance>=0.2.0",
-    "longbridge>=0.2.77",
+    "longbridge>=0.2.77,<4",
     "tickflow>=0.1.0",
     "alphasift",
     "lark-oapi>=1.0.0",

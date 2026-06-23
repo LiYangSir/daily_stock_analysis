@@ -33,7 +33,7 @@ docker compose version
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git
-sudo git clone https://github.com/ZhuLinsen/daily_stock_analysis.git /opt/daily_stock_analysis
+sudo git clone https://github.com/LiYangSir/daily_stock_analysis.git /opt/daily_stock_analysis
 sudo chown -R $USER:$USER /opt/daily_stock_analysis
 cd /opt/daily_stock_analysis
 ```
