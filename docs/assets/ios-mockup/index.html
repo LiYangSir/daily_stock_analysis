@@ -1,0 +1,2762 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DSA · iOS 视觉稿</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --surface-2: #f7f7f9;
+    --text: #1c1c1e;
+    --text-2: #6e6e73;
+    --text-3: #aeaeb2;
+    --hairline: rgba(60,60,67,0.18);
+    --hairline-strong: rgba(60,60,67,0.29);
+    --accent: #b8895a;          /* 古铜：唯一交互强调色 */
+    --up-cn: #e34d4d;           /* A股/港股 红涨 */
+    --down-cn: #2ea84f;
+    --up-us: #2ea84f;           /* 美股 绿涨 */
+    --down-us: #e34d4d;
+    --grouped-bg: #f2f2f7;
+    --tab-bg: rgba(255,255,255,0.78);
+    --shadow-soft: 0 30px 60px -30px rgba(0,0,0,0.18), 0 8px 24px -12px rgba(0,0,0,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --surface: #1c1c1e;
+      --surface-2: #2c2c2e;
+      --text: #ffffff;
+      --text-2: #98989f;
+      --text-3: #636366;
+      --hairline: rgba(84,84,88,0.65);
+      --hairline-strong: rgba(120,120,128,0.55);
+      --accent: #d4a37b;
+      --grouped-bg: #000000;
+      --tab-bg: rgba(28,28,30,0.78);
+      --shadow-soft: 0 30px 60px -30px rgba(0,0,0,0.7), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(180deg, #ece9e3 0%, #d9d4cb 100%);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 56px 24px 96px;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: linear-gradient(180deg, #14110e 0%, #08070a 100%); }
+  }
+
+  .page-header {
+    max-width: 1280px;
+    margin: 0 auto 40px;
+    text-align: center;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+  .page-header p {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+  .page-header .legend {
+    margin-top: 18px;
+    display: inline-flex;
+    gap: 18px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--hairline);
+    font-size: 12px;
+    color: var(--text-2);
+    backdrop-filter: blur(20px);
+  }
+  .legend .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 48px 32px;
+    max-width: 1480px;
+    margin: 0 auto;
+    justify-items: center;
+  }
+  @media (max-width: 460px) {
+    .stage { grid-template-columns: 1fr; }
+  }
+
+  .frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .frame-label { font-size: 13px; color: var(--text-2); letter-spacing: 0.2px; }
+  .frame-label strong { color: var(--text); font-weight: 600; }
+
+  /* iPhone 外壳 */
+  .phone {
+    width: 390px;
+    height: 844px;
+    border-radius: 56px;
+    background: #0a0a0a;
+    padding: 12px;
+    box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .phone::before {
+    /* 侧边按键 */
+    content: ""; position: absolute; left: -2px; top: 180px; width: 3px; height: 60px;
+    background: #1a1a1a; border-radius: 2px;
+  }
+  .phone::after {
+    content: ""; position: absolute; right: -2px; top: 220px; width: 3px; height: 100px;
+    background: #1a1a1a; border-radius: 2px;
+  }
+
+  .screen {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 44px;
+    overflow: hidden;
+    background: var(--grouped-bg);
+    color: var(--text);
+    display: flex; flex-direction: column;
+  }
+  /* Dynamic Island */
+  .island {
+    position: absolute;
+    top: 11px; left: 50%; transform: translateX(-50%);
+    width: 124px; height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 30;
+  }
+
+  /* Status bar */
+  .status {
+    position: relative;
+    height: 54px;
+    padding: 18px 28px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 0.2px;
+    z-index: 5;
+  }
+  .status .icons { display: inline-flex; gap: 6px; align-items: center; }
+  .status svg { display: block; }
+
+  /* Scroll area */
+  .content {
+    flex: 1;
+    overflow: hidden;
+    padding: 4px 0 0;
+    position: relative;
+  }
+
+  /* Large title */
+  .nav-large {
+    padding: 8px 20px 12px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .nav-large h1 {
+    font-size: 34px; font-weight: 700; letter-spacing: -0.6px; margin: 0;
+  }
+  .nav-large .actions {
+    display: inline-flex; gap: 18px; color: var(--accent); font-size: 17px;
+    align-items: center;
+  }
+
+  /* Inline title */
+  .nav-inline {
+    height: 44px;
+    padding: 0 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 0.5px solid var(--hairline);
+    background: var(--tab-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    position: relative; z-index: 4;
+  }
+  .nav-inline .title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+  .nav-inline .leading,.nav-inline .trailing { color: var(--accent); font-size: 17px; min-width: 28px; }
+  .nav-inline .leading { display:inline-flex; align-items:center; gap: 4px; }
+
+  /* Floating top bar (transparent) */
+  .nav-floating {
+    position: absolute;
+    top: 54px; left: 0; right: 0;
+    height: 44px;
+    padding: 0 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 6;
+    pointer-events: none;
+  }
+  .nav-floating > * { pointer-events: auto; }
+  .float-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 0.5px solid rgba(255,255,255,0.6);
+    box-shadow: 0 6px 18px -8px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.6);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  @media (prefers-color-scheme: dark) {
+    .float-btn {
+      background: rgba(28,28,30,0.7);
+      border-color: rgba(255,255,255,0.08);
+      box-shadow: 0 6px 18px -8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+  }
+  .float-btn svg { width: 18px; height: 18px; }
+  .nav-float-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--text);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 0.5px solid rgba(255,255,255,0.6);
+    box-shadow: 0 6px 18px -8px rgba(0,0,0,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    .nav-float-title { background: rgba(28,28,30,0.7); border-color: rgba(255,255,255,0.08); }
+  }
+
+  /* Search */
+  .searchbar {
+    margin: 4px 16px 14px;
+    height: 36px; border-radius: 10px;
+    background: rgba(118,118,128,0.12);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    color: var(--text-3); font-size: 15px;
+  }
+
+  /* Section header */
+  .section-h {
+    padding: 12px 20px 6px;
+    font-size: 13px; font-weight: 400;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* InsetGrouped list */
+  .list {
+    margin: 0 16px;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  @media (prefers-color-scheme: dark) {
+    .list { background: var(--surface-2); }
+  }
+  .row {
+    display: flex; align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    border-bottom: 0.5px solid var(--hairline);
+  }
+  .row:last-child { border-bottom: 0; }
+
+  .stock-name { font-size: 17px; font-weight: 500; letter-spacing: -0.2px; }
+  .stock-code { font-size: 13px; color: var(--text-2); margin-top: 2px; letter-spacing: 0.5px; }
+  .grow { flex: 1; min-width: 0; }
+  .price-cell { text-align: right; }
+  .price { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.2px; }
+  .price-mono {
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+    font-feature-settings: "tnum";
+  }
+
+  /* Change Chip */
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 80px;
+    height: 28px; padding: 0 10px;
+    border-radius: 6px;
+    font-size: 14px; font-weight: 600;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+  .chip.up-cn { background: var(--up-cn); }
+  .chip.down-cn { background: var(--down-cn); }
+  .chip.up-us { background: var(--up-us); }
+  .chip.down-us { background: var(--down-us); }
+  .chip.flat { background: var(--text-3); }
+
+  /* Tab Bar — 浮空胶囊 */
+  .tabbar-wrap {
+    position: absolute; left: 0; right: 0; bottom: 18px;
+    display: flex; justify-content: center;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .tabbar {
+    pointer-events: auto;
+    height: 64px;
+    padding: 0 10px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    border: 0.5px solid rgba(255,255,255,0.6);
+    border-radius: 999px;
+    box-shadow:
+      0 18px 40px -16px rgba(0,0,0,0.22),
+      0 4px 12px -4px rgba(0,0,0,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.7);
+    display: grid;
+    grid-template-columns: repeat(5, 56px);
+    align-items: center;
+    gap: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .tabbar {
+      background: rgba(28,28,30,0.7);
+      border-color: rgba(255,255,255,0.08);
+      box-shadow:
+        0 18px 40px -16px rgba(0,0,0,0.7),
+        0 4px 12px -4px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+  }
+  .tab {
+    height: 48px; width: 56px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px;
+    color: var(--text-3);
+    font-size: 10px; font-weight: 500; letter-spacing: 0.2px;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+  .tab svg { width: 22px; height: 22px; }
+  .tab.active {
+    color: var(--accent);
+    background: rgba(184,137,90,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    .tab.active { background: rgba(212,163,123,0.18); }
+  }
+
+  /* ============ Page 1: Markets ============ */
+  .scroll {
+    height: calc(844px - 47px);
+    overflow: hidden;
+    padding-bottom: 96px;
+  }
+
+  /* ============ Page 2: Report Detail ============ */
+  .price-block {
+    padding: 8px 20px 4px;
+  }
+  .price-display {
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+    font-size: 38px; font-weight: 600; letter-spacing: -1px;
+    font-feature-settings: "tnum";
+  }
+  .change-row {
+    margin-top: 2px;
+    font-size: 17px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .change-row .arrow { font-size: 14px; }
+
+  /* Sparkline */
+  .spark {
+    margin: 12px 0 4px;
+    height: 120px;
+    width: 100%;
+  }
+
+  /* K-line chart block */
+  .chart-block {
+    margin: 8px 0 0;
+    padding: 0 4px;
+  }
+  .chart-legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    padding: 6px 18px 4px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+  }
+  .chart-legend .lg-item { display: inline-flex; align-items: center; gap: 4px; }
+  .chart-legend .lg-dot {
+    display: inline-block;
+    width: 8px; height: 2px; border-radius: 1px;
+  }
+  .chart-legend .lg-val { color: var(--text); font-weight: 500; }
+  .chart-tabs {
+    display: flex; gap: 6px;
+    padding: 6px 16px 0;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-2);
+  }
+  .chart-tabs .ct {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(118,118,128,0.10);
+  }
+  .chart-tabs .ct.active {
+    background: rgba(184,137,90,0.14);
+    color: var(--accent);
+  }
+  .kline-svg { width: 100%; display: block; }
+  .crosshair-info {
+    position: absolute;
+    top: 6px; left: 12px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 0.5px solid var(--hairline);
+  }
+  @media (prefers-color-scheme: dark) {
+    .crosshair-info { background: rgba(28,28,30,0.78); }
+  }
+  .period-bar {
+    margin: 4px 12px 16px;
+    display: flex; justify-content: space-between;
+    color: var(--text-2);
+    font-size: 13px; font-weight: 500;
+  }
+  .period-bar .seg {
+    padding: 6px 10px; border-radius: 8px;
+  }
+  .period-bar .seg.active { background: rgba(118,118,128,0.18); color: var(--text); }
+
+  /* Module card (Weather style) */
+  .card {
+    margin: 0 16px 12px;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card { background: var(--surface-2); }
+  }
+  .card-h {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .card-h .icon { color: var(--accent); }
+
+  .action-line { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+  .action-sub { font-size: 14px; color: var(--text-2); margin-top: 2px; line-height: 1.45; }
+  .action-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 24px; padding: 0 10px;
+    border-radius: 6px;
+    background: rgba(118,118,128,0.16);
+    color: var(--text);
+    font-size: 13px; font-weight: 600;
+    margin-right: 8px;
+  }
+
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+  }
+  .strategy-grid .item .lbl { font-size: 12px; color: var(--text-2); margin-bottom: 2px; letter-spacing: 0.3px; }
+  .strategy-grid .item .val {
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+    font-size: 18px; font-weight: 600; font-feature-settings: "tnum";
+  }
+
+  /* Sentiment dial */
+  .dial {
+    height: 28px;
+    margin: 6px 0 4px;
+    display: flex; align-items: center;
+    position: relative;
+  }
+  .dial .bar {
+    height: 4px; flex: 1; border-radius: 2px;
+    background: linear-gradient(90deg, var(--down-cn) 0%, var(--text-3) 50%, var(--up-cn) 100%);
+    opacity: 0.5;
+  }
+  .dial .knob {
+    position: absolute;
+    left: 78%;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--surface);
+    transform: translateX(-50%);
+  }
+  .dial-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); }
+  .dial-row strong { color: var(--text); font-weight: 600; }
+
+  .sources { display: flex; flex-wrap: wrap; gap: 8px; }
+  .src {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 22px; padding: 0 8px;
+    border-radius: 6px;
+    background: rgba(118,118,128,0.12);
+    font-size: 12px; color: var(--text-2);
+  }
+  .src .ok { color: var(--up-us); font-weight: 700; }
+
+  /* Bottom news pill */
+  .news-pill {
+    position: absolute; left: 0; right: 0; bottom: 100px;
+    margin: 0 16px;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 14px 14px 0 0;
+    padding: 10px 16px 12px;
+    border-top: 0.5px solid var(--hairline);
+    box-shadow: 0 -8px 24px -16px rgba(0,0,0,0.15);
+  }
+  @media (prefers-color-scheme: dark) {
+    .news-pill { background: rgba(28,28,30,0.78); }
+  }
+  .news-pill .grabber {
+    width: 36px; height: 5px; border-radius: 3px;
+    background: var(--hairline-strong);
+    margin: 0 auto 8px;
+  }
+  .news-pill .label { font-size: 13px; color: var(--text-2); }
+  .news-pill .head { font-size: 16px; font-weight: 600; margin-top: 2px; line-height: 1.35; }
+
+  /* ============ Page 3: Portfolio ============ */
+  .portfolio-total {
+    padding: 8px 20px 0;
+  }
+  .portfolio-total .lbl { font-size: 13px; color: var(--text-2); letter-spacing: 0.3px; text-transform: uppercase; }
+  .portfolio-total .val {
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+    font-size: 38px; font-weight: 600; letter-spacing: -1px;
+    font-feature-settings: "tnum";
+  }
+
+  .ring-wrap {
+    display: flex; align-items: center; gap: 16px;
+    margin: 18px 16px 14px;
+    padding: 18px 20px;
+    background: var(--surface);
+    border-radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .ring-wrap { background: var(--surface-2); }
+  }
+  .legend-list { flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .legend-list .row { padding: 0; border: 0; gap: 8px; }
+  .legend-list .swatch { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-list .pct { color: var(--text-2); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .scroll-portfolio {
+    height: calc(844px - 47px);
+    overflow: hidden;
+    padding-bottom: 96px;
+  }
+  .nav-list { margin: 0 16px 12px; background: var(--surface); border-radius: 12px; }
+  @media (prefers-color-scheme: dark) {
+    .nav-list { background: var(--surface-2); }
+  }
+  .nav-list .row { justify-content: space-between; }
+  .nav-list .lead { display: inline-flex; align-items: center; gap: 12px; }
+  .nav-list .ico {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .nav-list .chev { color: var(--text-3); font-size: 17px; }
+
+  /* tiny utility */
+  .hl { color: var(--up-cn); }
+  .lo { color: var(--down-cn); }
+  .hl-us { color: var(--up-us); }
+  .lo-us { color: var(--down-us); }
+  .muted { color: var(--text-2); }
+  .row-meta { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .mono { font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif; font-feature-settings: "tnum"; }
+  .pad { padding: 0 16px; }
+
+  /* Form fields */
+  .field { padding: 10px 16px; border-bottom: 0.5px solid var(--hairline); }
+  .field:last-child { border-bottom: 0; }
+  .field .lbl { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .field .val-input {
+    font-size: 15px; color: var(--text); font-weight: 500;
+    background: transparent; border: 0; padding: 0; width: 100%;
+    font-feature-settings: "tnum";
+  }
+
+  /* Toggle */
+  .toggle { width: 42px; height: 26px; border-radius: 999px; background: var(--up-us); position: relative; flex-shrink: 0; display: inline-block; }
+  .toggle.off { background: rgba(118,118,128,0.32); }
+  .toggle::after {
+    content: ""; position: absolute; top: 2px; left: 18px; width: 22px; height: 22px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.off::after { left: 2px; }
+
+  /* Pill segments */
+  .seg-row { padding: 0 16px 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg {
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(118,118,128,0.10);
+    color: var(--text-2); font-size: 12px; font-weight: 500;
+  }
+  .seg.active { background: rgba(184,137,90,0.14); color: var(--accent); }
+
+  /* Tag */
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 22px; padding: 0 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(118,118,128,0.12); color: var(--text-2);
+  }
+  .tag.green { background: rgba(58,164,107,0.16); color: #2c8a55; }
+  .tag.red { background: rgba(227,77,77,0.16); color: #c93434; }
+  .tag.orange { background: rgba(224,162,58,0.16); color: #b07b1d; }
+  .tag.blue { background: rgba(91,141,239,0.16); color: #4570d5; }
+  .tag.purple { background: rgba(161,110,224,0.16); color: #7c4ec5; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 44px; padding: 0 18px; border-radius: 12px;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+    border: 0;
+  }
+  .btn.subtle { background: rgba(118,118,128,0.16); color: var(--text); }
+
+  /* Login background */
+  .login-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(184,137,90,0.35), transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(91,141,239,0.25), transparent 50%),
+                linear-gradient(180deg, #1c1610 0%, #0a0807 100%);
+  }
+  .login-particle { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+
+  /* Big number */
+  .bignum {
+    font-family: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+    font-size: 38px; font-weight: 600; letter-spacing: -1px; font-feature-settings: "tnum";
+  }
+
+  /* Stat grid */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 16px 12px; }
+  .stat-grid .stat { background: var(--surface); padding: 14px 16px; border-radius: 14px; }
+  @media (prefers-color-scheme: dark) { .stat-grid .stat { background: var(--surface-2); } }
+  .stat .lbl { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat .val { font-family: ui-rounded, system-ui; font-size: 22px; font-weight: 600; margin-top: 4px; font-feature-settings: "tnum"; }
+
+  /* StockBar (horizontal scroll) */
+  .stockbar { padding: 8px 12px 4px; overflow: hidden; }
+  .stockbar-inner { display: inline-flex; gap: 8px; }
+  .stock-pill {
+    flex-shrink: 0; padding: 8px 12px;
+    background: var(--surface); border-radius: 12px; min-width: 110px;
+    border: 0.5px solid var(--hairline);
+  }
+  @media (prefers-color-scheme: dark) { .stock-pill { background: var(--surface-2); } }
+  .stock-pill .nm { font-size: 12px; font-weight: 500; }
+  .stock-pill .pc { font-size: 14px; font-weight: 600; margin-top: 2px; font-family: ui-rounded, system-ui; font-feature-settings: "tnum"; }
+  .stock-pill .ch { font-size: 11px; margin-top: 2px; }
+
+  /* Task pill */
+  .task-pill {
+    position: absolute; top: 50px; left: 16px; right: 16px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 0.5px solid var(--hairline);
+    border-radius: 14px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 22px -12px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+  @media (prefers-color-scheme: dark) { .task-pill { background: rgba(28,28,30,0.78); } }
+  .task-pill .ti { flex: 1; }
+  .task-pill .ti-name { font-size: 14px; font-weight: 600; }
+  .task-pill .ti-step { font-size: 11px; color: var(--text-2); }
+
+  /* Chat */
+  .bubble-user {
+    align-self: flex-end; max-width: 82%;
+    background: var(--accent); color: #fff;
+    padding: 10px 14px; border-radius: 18px 18px 4px 18px;
+    margin: 4px 16px 0 auto; font-size: 14px; line-height: 1.4;
+    width: fit-content;
+  }
+  .bubble-ai {
+    align-self: flex-start; max-width: 88%;
+    background: var(--surface);
+    padding: 12px 14px; border-radius: 18px 18px 18px 4px;
+    margin: 4px 16px 0; font-size: 14px; line-height: 1.5;
+    border: 0.5px solid var(--hairline);
+    width: fit-content;
+  }
+  @media (prefers-color-scheme: dark) { .bubble-ai { background: var(--surface-2); } }
+  .think-block {
+    margin: 4px 16px 0; padding: 8px 12px; border-radius: 10px;
+    background: rgba(118,118,128,0.08);
+    font-size: 12px; color: var(--text-2);
+    display: inline-flex; gap: 6px; align-items: center;
+    width: fit-content;
+  }
+  .think-block .spin {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid var(--accent); border-top-color: transparent;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .chat-input {
+    position: absolute; bottom: 100px; left: 16px; right: 16px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 0.5px solid var(--hairline);
+    border-radius: 22px; padding: 8px 8px 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 22px -12px rgba(0,0,0,0.18);
+  }
+  @media (prefers-color-scheme: dark) { .chat-input { background: rgba(28,28,30,0.85); } }
+  .chat-input .placeholder { flex: 1; font-size: 14px; color: var(--text-3); }
+  .chat-input .send { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+  .skills-row {
+    position: absolute; bottom: 156px; left: 16px; right: 16px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .skill {
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(255,255,255,0.7);
+    border: 0.5px solid var(--hairline);
+    font-size: 11px; color: var(--text-2);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .skill.active { background: rgba(184,137,90,0.16); color: var(--accent); border-color: rgba(184,137,90,0.3); }
+
+  /* Group header for stage */
+  .group-h {
+    max-width: 1480px;
+    margin: 56px auto 24px;
+    padding: 0 8px;
+    font-size: 13px; color: var(--text-2);
+    letter-spacing: 1px; text-transform: uppercase; font-weight: 500;
+  }
+
+  /* Bar/Pie utility */
+  .bar-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+  .bar-row .lab { width: 70px; color: var(--text-2); font-size: 12px; }
+  .bar-row .barbg { flex: 1; height: 8px; border-radius: 4px; background: rgba(118,118,128,0.16); position: relative; overflow: hidden; }
+  .bar-row .barbg .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--accent); border-radius: 4px; }
+  .bar-row .num { width: 56px; text-align: right; font-family: ui-rounded, system-ui; font-feature-settings: "tnum"; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>DSA · iOS 视觉稿（11 屏 · Web 全功能映射）</h1>
+  <p>基于 Apple HIG（Stocks / Health / Weather / Settings 风格）+ 浮空胶囊 Tab + 玻璃材质点缀 — 11 屏覆盖 Web 全部页面</p>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--up-cn)"></span>A 股 / 港股 红涨</span>
+    <span><span class="dot" style="background:var(--up-us)"></span>美股 / 日股 / 韩股 绿涨</span>
+    <span><span class="dot" style="background:var(--accent)"></span>古铜强调色（仅交互）</span>
+    <span>切换系统暗色模式可预览暗色态</span>
+  </div>
+</div>
+
+<div class="group-h">行情 · 报告 · 组合（核心 3 屏）</div>
+<div class="stage">
+
+  <!-- ===================== 1. Markets ===================== -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8 9.5l3.5-4a5 5 0 0 0-7 0L8 9.5z"/><circle cx="8" cy="9.5" r="0.8" fill="currentColor"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large">
+              <h1>行情</h1>
+              <div class="actions">
+                <span>＋</span>
+                <span>⋯</span>
+              </div>
+            </div>
+            <div class="searchbar">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5l3 3"/></svg>
+              <span>搜索股票 / 代码</span>
+            </div>
+
+            <div class="section-h">关注</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台</div>
+                  <div class="stock-code">600519 · 上交所</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">¥1,680.00</div>
+                </div>
+                <span class="chip up-cn" style="margin-left: 10px;">+1.23%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯控股</div>
+                  <div class="stock-code">00700 · 港交所</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">HK$385.20</div>
+                </div>
+                <span class="chip down-cn" style="margin-left: 10px;">−0.85%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Apple Inc</div>
+                  <div class="stock-code">AAPL · NASDAQ</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">$192.30</div>
+                </div>
+                <span class="chip up-us" style="margin-left: 10px;">+0.42%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">NVIDIA</div>
+                  <div class="stock-code">NVDA · NASDAQ</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">$132.05</div>
+                </div>
+                <span class="chip down-us" style="margin-left: 10px;">−1.82%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">三星电子</div>
+                  <div class="stock-code">005930 · KRX</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">₩78,400</div>
+                </div>
+                <span class="chip flat" style="margin-left: 10px;">0.00%</span>
+              </div>
+            </div>
+
+            <div class="section-h">最近分析</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台</div>
+                  <div class="row-meta">2 小时前 · 完整报告</div>
+                </div>
+                <span class="action-chip">买入</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯控股</div>
+                  <div class="row-meta">昨天 · 简要报告</div>
+                </div>
+                <span class="action-chip">观望</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Apple Inc</div>
+                  <div class="row-meta">昨天 · 详细报告</div>
+                </div>
+                <span class="action-chip">持有</span>
+                <span class="chev muted">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>
+            行情
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+            分析
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>
+            助手
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/><path d="M12 4v8l5 3"/></svg>
+            组合
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            我的
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>行情主页</strong> · Stocks 风格列表 + InsetGrouped</div>
+  </div>
+
+  <!-- ===================== 2. Report Detail ===================== -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8 9.5l3.5-4a5 5 0 0 0-7 0L8 9.5z"/><circle cx="8" cy="9.5" r="0.8" fill="currentColor"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+
+        <div class="nav-floating">
+          <button class="float-btn" aria-label="返回">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3l-6 6 6 6"/></svg>
+          </button>
+          <span class="nav-float-title">贵州茅台 · 600519</span>
+          <button class="float-btn" aria-label="更多">
+            <svg viewBox="0 0 18 18" fill="currentColor"><circle cx="4" cy="9" r="1.4"/><circle cx="9" cy="9" r="1.4"/><circle cx="14" cy="9" r="1.4"/></svg>
+          </button>
+        </div>
+
+        <div class="content" style="overflow: hidden;">
+          <div style="height: calc(844px - 47px); overflow: hidden; position: relative; padding-top: 52px; padding-bottom: 96px;">
+
+            <div class="price-block">
+              <div class="price-display">¥1,680.00</div>
+              <div class="change-row" style="color: var(--up-cn);">
+                <span class="arrow">▲</span>
+                <span class="price-mono">+20.50</span>
+                <span class="price-mono">+1.23%</span>
+                <span class="muted" style="margin-left: 8px; font-size: 13px; font-weight: 400;">收盘 · 15:00</span>
+              </div>
+            </div>
+
+            <!-- K 线主图 + MA5/10/20 -->
+            <div class="chart-block" style="position: relative;">
+              <div class="chart-legend">
+                <span class="lg-item"><span class="lg-dot" style="background:#e0a23a"></span>MA5 <span class="lg-val">1,648.20</span></span>
+                <span class="lg-item"><span class="lg-dot" style="background:#5b8def"></span>MA10 <span class="lg-val">1,612.40</span></span>
+                <span class="lg-item"><span class="lg-dot" style="background:#a16ee0"></span>MA20 <span class="lg-val">1,565.80</span></span>
+              </div>
+              <svg class="kline-svg" viewBox="0 0 366 168" preserveAspectRatio="none">
+                <g stroke="var(--hairline)" stroke-width="0.5" stroke-dasharray="2 3">
+                  <line x1="8" x2="358" y1="20" y2="20"/>
+                  <line x1="8" x2="358" y1="60" y2="60"/>
+                  <line x1="8" x2="358" y1="100" y2="100"/>
+                  <line x1="8" x2="358" y1="140" y2="140"/>
+                </g>
+                <g fill="var(--text-3)" font-size="9" font-family="ui-rounded, system-ui" text-anchor="end">
+                  <text x="358" y="18">1,720</text>
+                  <text x="358" y="58">1,680</text>
+                  <text x="358" y="98">1,640</text>
+                  <text x="358" y="138">1,600</text>
+                  <text x="358" y="160">1,560</text>
+                </g>
+                <g>
+                  <line x1="13" y1="142" x2="13" y2="125" stroke="#2ea84f" stroke-width="1"/><rect x="9" y="130" width="8" height="10" fill="#2ea84f"/>
+                  <line x1="24" y1="138" x2="24" y2="118" stroke="#e34d4d" stroke-width="1"/><rect x="20" y="122" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="35" y1="135" x2="35" y2="115" stroke="#e34d4d" stroke-width="1"/><rect x="31" y="118" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="46" y1="132" x2="46" y2="110" stroke="#2ea84f" stroke-width="1"/><rect x="42" y="118" width="8" height="12" fill="#2ea84f"/>
+                  <line x1="57" y1="135" x2="57" y2="116" stroke="#e34d4d" stroke-width="1"/><rect x="53" y="120" width="8" height="13" fill="#e34d4d"/>
+                  <line x1="68" y1="128" x2="68" y2="105" stroke="#e34d4d" stroke-width="1"/><rect x="64" y="110" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="79" y1="120" x2="79" y2="100" stroke="#2ea84f" stroke-width="1"/><rect x="75" y="108" width="8" height="10" fill="#2ea84f"/>
+                  <line x1="90" y1="125" x2="90" y2="102" stroke="#2ea84f" stroke-width="1"/><rect x="86" y="112" width="8" height="11" fill="#2ea84f"/>
+                  <line x1="101" y1="130" x2="101" y2="108" stroke="#2ea84f" stroke-width="1"/><rect x="97" y="118" width="8" height="10" fill="#2ea84f"/>
+                  <line x1="112" y1="128" x2="112" y2="105" stroke="#e34d4d" stroke-width="1"/><rect x="108" y="110" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="123" y1="118" x2="123" y2="92"  stroke="#e34d4d" stroke-width="1"/><rect x="119" y="98" width="8" height="16" fill="#e34d4d"/>
+                  <line x1="134" y1="105" x2="134" y2="80" stroke="#e34d4d" stroke-width="1"/><rect x="130" y="86" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="145" y1="98" x2="145" y2="78"  stroke="#2ea84f" stroke-width="1"/><rect x="141" y="84" width="8" height="11" fill="#2ea84f"/>
+                  <line x1="156" y1="100" x2="156" y2="76" stroke="#2ea84f" stroke-width="1"/><rect x="152" y="86" width="8" height="10" fill="#2ea84f"/>
+                  <line x1="167" y1="98" x2="167" y2="72"  stroke="#e34d4d" stroke-width="1"/><rect x="163" y="78" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="178" y1="92" x2="178" y2="65"  stroke="#e34d4d" stroke-width="1"/><rect x="174" y="70" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="189" y1="82" x2="189" y2="58"  stroke="#e34d4d" stroke-width="1"/><rect x="185" y="62" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="200" y1="76" x2="200" y2="52"  stroke="#2ea84f" stroke-width="1"/><rect x="196" y="60" width="8" height="12" fill="#2ea84f"/>
+                  <line x1="211" y1="80" x2="211" y2="56"  stroke="#e34d4d" stroke-width="1"/><rect x="207" y="62" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="222" y1="72" x2="222" y2="46"  stroke="#e34d4d" stroke-width="1"/><rect x="218" y="52" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="233" y1="65" x2="233" y2="40"  stroke="#e34d4d" stroke-width="1"/><rect x="229" y="46" width="8" height="13" fill="#e34d4d"/>
+                  <line x1="244" y1="62" x2="244" y2="36"  stroke="#2ea84f" stroke-width="1"/><rect x="240" y="44" width="8" height="12" fill="#2ea84f"/>
+                  <line x1="255" y1="68" x2="255" y2="42"  stroke="#2ea84f" stroke-width="1"/><rect x="251" y="50" width="8" height="14" fill="#2ea84f"/>
+                  <line x1="266" y1="64" x2="266" y2="38"  stroke="#e34d4d" stroke-width="1"/><rect x="262" y="44" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="277" y1="56" x2="277" y2="32"  stroke="#e34d4d" stroke-width="1"/><rect x="273" y="36" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="288" y1="50" x2="288" y2="28"  stroke="#e34d4d" stroke-width="1"/><rect x="284" y="32" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="299" y1="56" x2="299" y2="32"  stroke="#2ea84f" stroke-width="1"/><rect x="295" y="42" width="8" height="11" fill="#2ea84f"/>
+                  <line x1="310" y1="58" x2="310" y2="34"  stroke="#e34d4d" stroke-width="1"/><rect x="306" y="40" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="321" y1="50" x2="321" y2="26"  stroke="#e34d4d" stroke-width="1"/><rect x="317" y="32" width="8" height="14" fill="#e34d4d"/>
+                  <line x1="332" y1="44" x2="332" y2="20"  stroke="#e34d4d" stroke-width="1"/><rect x="328" y="26" width="8" height="14" fill="#e34d4d"/>
+                </g>
+                <polyline fill="none" stroke="#e0a23a" stroke-width="1.4" stroke-linejoin="round"
+                          points="13,132 24,128 35,124 46,122 57,124 68,118 79,114 90,116 101,118 112,116 123,108 134,98 145,92 156,90 167,88 178,82 189,72 200,68 211,68 222,60 233,52 244,50 255,52 266,48 277,42 288,36 299,38 310,40 321,34 332,28"/>
+                <polyline fill="none" stroke="#5b8def" stroke-width="1.4" stroke-linejoin="round"
+                          points="13,134 24,132 35,130 46,128 57,128 68,124 79,120 90,118 101,118 112,116 123,110 134,104 145,98 156,94 167,90 178,84 189,78 200,72 211,70 222,64 233,58 244,54 255,52 266,48 277,46 288,42 299,42 310,40 321,36 332,32"/>
+                <polyline fill="none" stroke="#a16ee0" stroke-width="1.4" stroke-linejoin="round"
+                          points="13,138 24,136 35,134 46,132 57,130 68,128 79,126 90,124 101,122 112,120 123,116 134,112 145,108 156,104 167,98 178,92 189,86 200,80 211,76 222,72 233,68 244,64 255,60 266,56 277,52 288,48 299,46 310,44 321,42 332,40"/>
+                <line x1="8" x2="358" y1="58" y2="58" stroke="var(--up-cn)" stroke-width="0.6" stroke-dasharray="2 3" opacity="0.6"/>
+              </svg>
+
+              <div class="period-bar">
+                <span class="seg">1日</span>
+                <span class="seg">5日</span>
+                <span class="seg">1月</span>
+                <span class="seg active">3月</span>
+                <span class="seg">1年</span>
+                <span class="seg">全部</span>
+              </div>
+
+              <div class="chart-tabs">
+                <span class="ct active">MACD</span>
+                <span class="ct">KDJ</span>
+                <span class="ct">RSI</span>
+                <span class="ct">BOLL</span>
+                <span class="ct">VOL</span>
+              </div>
+
+              <div class="chart-legend" style="padding-top: 4px;">
+                <span class="lg-item"><span class="lg-dot" style="background:#e0a23a"></span>DIF <span class="lg-val">+18.42</span></span>
+                <span class="lg-item"><span class="lg-dot" style="background:#5b8def"></span>DEA <span class="lg-val">+12.05</span></span>
+                <span class="lg-item">MACD <span class="lg-val" style="color:var(--up-cn)">+12.74</span></span>
+              </div>
+              <svg class="kline-svg" viewBox="0 0 366 70" preserveAspectRatio="none" style="margin-top: 2px;">
+                <line x1="8" x2="358" y1="35" y2="35" stroke="var(--hairline-strong)" stroke-width="0.5"/>
+                <g>
+                  <rect x="9"  y="34" width="8" height="2" fill="#2ea84f"/>
+                  <rect x="20" y="33" width="8" height="3" fill="#2ea84f"/>
+                  <rect x="31" y="32" width="8" height="4" fill="#2ea84f"/>
+                  <rect x="42" y="31" width="8" height="5" fill="#2ea84f"/>
+                  <rect x="53" y="33" width="8" height="3" fill="#2ea84f"/>
+                  <rect x="64" y="35" width="8" height="3" fill="#e34d4d"/>
+                  <rect x="75" y="35" width="8" height="5" fill="#e34d4d"/>
+                  <rect x="86" y="35" width="8" height="4" fill="#e34d4d"/>
+                  <rect x="97" y="35" width="8" height="2" fill="#e34d4d"/>
+                  <rect x="108" y="34" width="8" height="2" fill="#2ea84f"/>
+                  <rect x="119" y="32" width="8" height="4" fill="#2ea84f"/>
+                  <rect x="130" y="29" width="8" height="7" fill="#2ea84f"/>
+                  <rect x="141" y="26" width="8" height="10" fill="#2ea84f"/>
+                  <rect x="152" y="24" width="8" height="12" fill="#2ea84f"/>
+                  <rect x="163" y="22" width="8" height="14" fill="#2ea84f"/>
+                  <rect x="174" y="20" width="8" height="16" fill="#2ea84f"/>
+                  <rect x="185" y="18" width="8" height="18" fill="#2ea84f"/>
+                  <rect x="196" y="16" width="8" height="20" fill="#2ea84f"/>
+                  <rect x="207" y="15" width="8" height="21" fill="#2ea84f"/>
+                  <rect x="218" y="14" width="8" height="22" fill="#2ea84f"/>
+                  <rect x="229" y="13" width="8" height="23" fill="#2ea84f"/>
+                  <rect x="240" y="12" width="8" height="24" fill="#2ea84f"/>
+                  <rect x="251" y="13" width="8" height="23" fill="#2ea84f"/>
+                  <rect x="262" y="12" width="8" height="24" fill="#2ea84f"/>
+                  <rect x="273" y="11" width="8" height="25" fill="#2ea84f"/>
+                  <rect x="284" y="10" width="8" height="26" fill="#2ea84f"/>
+                  <rect x="295" y="11" width="8" height="25" fill="#2ea84f"/>
+                  <rect x="306" y="12" width="8" height="24" fill="#2ea84f"/>
+                  <rect x="317" y="11" width="8" height="25" fill="#2ea84f"/>
+                  <rect x="328" y="10" width="8" height="26" fill="#2ea84f"/>
+                </g>
+                <polyline fill="none" stroke="#e0a23a" stroke-width="1.2" stroke-linejoin="round"
+                          points="13,36 24,35 35,34 46,32 57,33 68,36 79,38 90,38 101,37 112,36 123,33 134,29 145,26 156,22 167,19 178,16 189,12 200,10 211,8 222,7 233,6 244,6 255,7 266,7 277,6 288,5 299,5 310,6 321,5 332,4"/>
+                <polyline fill="none" stroke="#5b8def" stroke-width="1.2" stroke-linejoin="round"
+                          points="13,36 24,36 35,35 46,34 57,34 68,35 79,36 90,37 101,37 112,37 123,36 134,33 145,30 156,27 167,24 178,20 189,17 200,14 211,12 222,10 233,9 244,8 255,8 266,8 277,7 288,7 299,7 310,7 321,7 332,6"/>
+              </svg>
+            </div>
+
+            <!-- 模块卡：操作建议 -->
+            <div class="card">
+              <div class="card-h">
+                <span>操作建议</span>
+                <span class="icon">⌃</span>
+              </div>
+              <div>
+                <span class="action-chip">买入</span>
+                <span class="muted" style="font-size: 13px;">置信 0.78 · 短期 1-2 周</span>
+              </div>
+              <div class="action-sub" style="margin-top: 8px;">
+                白酒板块情绪修复，公司基本面稳健、Q1 现金流环比改善；建议在 1,580-1,620 区间分批建仓，破位 1,520 止损。
+              </div>
+            </div>
+
+            <!-- 模块卡：策略点位 -->
+            <div class="card">
+              <div class="card-h">
+                <span>策略点位</span>
+                <span class="muted" style="font-size: 12px;">CNY</span>
+              </div>
+              <div class="strategy-grid">
+                <div class="item"><div class="lbl">理想买入</div><div class="val">1,580</div></div>
+                <div class="item"><div class="lbl">止损</div><div class="val" style="color: var(--down-cn)">1,520</div></div>
+                <div class="item"><div class="lbl">次优买入</div><div class="val">1,620</div></div>
+                <div class="item"><div class="lbl">止盈</div><div class="val" style="color: var(--up-cn)">1,780</div></div>
+              </div>
+            </div>
+
+            <!-- 模块卡：情绪 -->
+            <div class="card">
+              <div class="card-h">
+                <span>市场情绪</span>
+                <span class="muted" style="font-size: 12px;">0 — 100</span>
+              </div>
+              <div class="dial">
+                <div class="bar"></div>
+                <div class="knob"></div>
+              </div>
+              <div class="dial-row">
+                <span>悲观</span>
+                <span><strong>78</strong> · 乐观</span>
+              </div>
+            </div>
+
+            <!-- 模块卡：数据来源 -->
+            <div class="card">
+              <div class="card-h"><span>数据来源</span></div>
+              <div class="sources">
+                <span class="src"><span class="ok">✓</span> 实时行情</span>
+                <span class="src"><span class="ok">✓</span> 财报快照</span>
+                <span class="src"><span class="ok">✓</span> 新闻 8 条</span>
+                <span class="src"><span class="ok">✓</span> 板块轮动</span>
+                <span class="src muted">分红 (空)</span>
+              </div>
+            </div>
+
+            <!-- 底部新闻 Pill -->
+            <div class="news-pill">
+              <div class="grabber"></div>
+              <div class="label">相关资讯 · 8</div>
+              <div class="head">茅台 Q1 经营数据超预期，机构上调目标价</div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>
+            行情
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+            分析
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>
+            助手
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/><path d="M12 4v8l5 3"/></svg>
+            组合
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            我的
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>报告详情</strong> · Weather 模块卡 + Stocks 顶部 + 底部新闻 Sheet</div>
+  </div>
+
+  <!-- ===================== 3. Portfolio ===================== -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8 9.5l3.5-4a5 5 0 0 0-7 0L8 9.5z"/><circle cx="8" cy="9.5" r="0.8" fill="currentColor"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+
+        <div class="content">
+          <div class="scroll-portfolio">
+            <div class="nav-large">
+              <h1>组合</h1>
+              <div class="actions">
+                <span style="font-size: 14px; color: var(--accent);">主账户 ▾</span>
+              </div>
+            </div>
+
+            <div class="portfolio-total">
+              <div class="lbl">总市值</div>
+              <div class="val price-mono">¥523,180.00</div>
+              <div class="change-row" style="color: var(--up-cn);">
+                <span class="arrow">▲</span>
+                <span class="price-mono">¥3,212</span>
+                <span class="price-mono">+0.62%</span>
+                <span class="muted" style="margin-left: 8px; font-size: 13px; font-weight: 400;">今日</span>
+              </div>
+            </div>
+
+            <!-- Allocation ring -->
+            <div class="ring-wrap">
+              <svg width="120" height="120" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r="16" fill="none" stroke="rgba(118,118,128,0.16)" stroke-width="6"/>
+                <!-- 仓位段 -->
+                <circle cx="21" cy="21" r="16" fill="none" stroke="#b8895a" stroke-width="6"
+                        stroke-dasharray="42 100" stroke-dashoffset="0" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="16" fill="none" stroke="#5b8def" stroke-width="6"
+                        stroke-dasharray="22 100" stroke-dashoffset="-42" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="16" fill="none" stroke="#7c5fb5" stroke-width="6"
+                        stroke-dasharray="18 100" stroke-dashoffset="-64" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="16" fill="none" stroke="#3aa46b" stroke-width="6"
+                        stroke-dasharray="12 100" stroke-dashoffset="-82" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="16" fill="none" stroke="rgba(120,120,128,0.45)" stroke-width="6"
+                        stroke-dasharray="6 100" stroke-dashoffset="-94" transform="rotate(-90 21 21)"/>
+                <text x="21" y="22" text-anchor="middle" font-size="6" font-weight="600" fill="currentColor">5 类</text>
+              </svg>
+              <div class="legend-list">
+                <div class="row"><span class="swatch" style="background:#b8895a"></span>白酒消费<span class="pct price-mono">42%</span></div>
+                <div class="row"><span class="swatch" style="background:#5b8def"></span>科技互联<span class="pct price-mono">22%</span></div>
+                <div class="row"><span class="swatch" style="background:#7c5fb5"></span>新能源<span class="pct price-mono">18%</span></div>
+                <div class="row"><span class="swatch" style="background:#3aa46b"></span>医药<span class="pct price-mono">12%</span></div>
+                <div class="row"><span class="swatch" style="background:rgba(120,120,128,0.7)"></span>现金<span class="pct price-mono">6%</span></div>
+              </div>
+            </div>
+
+            <div class="section-h">主要持仓</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台</div>
+                  <div class="row-meta">100 股 · 成本 1,520.00</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">¥168,000</div>
+                  <div class="row-meta hl">+10.5%</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯控股</div>
+                  <div class="row-meta">200 股 · 成本 410.00</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">HK$77,040</div>
+                  <div class="row-meta lo">−6.0%</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Apple Inc</div>
+                  <div class="row-meta">300 股 · 成本 175.20</div>
+                </div>
+                <div class="price-cell">
+                  <div class="price price-mono">$57,690</div>
+                  <div class="row-meta hl-us">+9.8%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-h">更多</div>
+            <div class="nav-list">
+              <div class="row">
+                <span class="lead"><span class="ico">¥</span> 现金台账</span>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <span class="lead"><span class="ico" style="background:#5b8def">!</span> 风险报告</span>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <span class="lead"><span class="ico" style="background:#7c5fb5">⏰</span> 告警规则 · 3</span>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <span class="lead"><span class="ico" style="background:#3aa46b">▶︎</span> 回测</span>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>
+            行情
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+            分析
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>
+            助手
+          </div>
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0zm8-7v7l5 3"/></svg>
+            组合
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            我的
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>投资组合</strong> · Health 卡片堆叠 + Fitness 圆环</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">入口与系统</div>
+<div class="stage">
+
+  <!-- ============ Screen: Login ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="login-bg">
+          <span class="login-particle" style="top:12%;left:18%"></span>
+          <span class="login-particle" style="top:24%;left:60%;width:3px;height:3px"></span>
+          <span class="login-particle" style="top:55%;left:30%;width:5px;height:5px"></span>
+          <span class="login-particle" style="top:70%;left:75%"></span>
+          <span class="login-particle" style="top:88%;left:15%;width:3px;height:3px"></span>
+        </div>
+        <div class="island"></div>
+        <div class="status" style="color:#fff">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div style="position:relative;z-index:2;color:#fff;padding:60px 28px 0;flex:1;display:flex;flex-direction:column;">
+          <div style="font-family:ui-rounded,system-ui;font-size:32px;font-weight:700;letter-spacing:-0.5px;">DSA</div>
+          <div style="font-size:14px;opacity:0.7;margin-top:4px">股票智能分析系统</div>
+          <div style="margin-top:auto;margin-bottom:80px;">
+            <div style="font-size:22px;font-weight:600;margin-bottom:4px">登录</div>
+            <div style="font-size:13px;opacity:0.6;margin-bottom:24px">私有部署，请输入访问密码</div>
+            <div style="background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+              <div style="font-size:11px;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px">密码</div>
+              <div style="font-size:17px;letter-spacing:6px;margin-top:6px">••••••••</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:14px 16px;margin-bottom:24px">
+              <div style="font-size:11px;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px">服务器地址</div>
+              <div style="font-size:14px;margin-top:6px;opacity:0.85">https://dsa.example.com</div>
+            </div>
+            <button style="width:100%;height:50px;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;border:0">登录</button>
+            <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:12px;opacity:0.6">
+              <span>中文 · English</span><span>v3.23.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>① 登录 / 首次设置</strong>支持自部署 baseURL · 首次设置带密码确认 · 粒子背景</div>
+  </div>
+
+  <!-- ============ Screen: Settings (我的) ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>我的</h1></div>
+
+            <div class="section-h">账户</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead"><span class="ico" style="background:#5b8def">A</span> 已登录 · admin</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#7c5fb5">⚿</span> 修改密码</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#e34d4d">↩</span> 退出登录</span></div>
+            </div>
+
+            <div class="section-h">服务器</div>
+            <div class="nav-list">
+              <div class="field">
+                <div class="lbl">Base URL</div>
+                <input class="val-input" value="https://dsa.example.com" />
+              </div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#3aa46b">✓</span> 连接测试</span><span class="muted" style="font-size:14px">已连接 · 32ms</span></div>
+            </div>
+
+            <div class="section-h">外观</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead"><span class="ico" style="background:#e0a23a">☀</span> 主题</span><span class="muted" style="font-size:14px">跟随系统 ›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#5b8def">文</span> 界面语言</span><span class="muted" style="font-size:14px">中文 ›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:var(--up-cn)">⇅</span> 涨跌颜色</span><span class="muted" style="font-size:14px">跟随市场 ›</span></div>
+            </div>
+
+            <div class="section-h">系统配置</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead"><span class="ico" style="background:#a16ee0">L</span> LLM 通道</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#3aa46b">N</span> 通知通道</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#e0a23a">⏰</span> 调度器</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#5b8def">⇄</span> 配置导入 / 导出</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:var(--accent)">$</span> Token 用量</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#7c5fb5">S</span> AlphaSift 启用</span><span class="toggle"></span></div>
+            </div>
+
+            <div class="section-h">关于</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead"><span class="ico" style="background:rgba(120,120,128,0.6)">i</span> 版本</span><span class="muted" style="font-size:14px">3.23.0</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:rgba(120,120,128,0.6)">G</span> GitHub</span><span class="chev">›</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0H4z"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>② 我的 / 设置</strong>baseURL · 主题 · 涨跌色 · LLM/通知/调度入口（Settings App 风格）</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">分析与对话</div>
+<div class="stage">
+
+  <!-- ============ Screen: 提交分析 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>分析</h1></div>
+            <div class="seg-row">
+              <span class="seg active">提交分析</span>
+              <span class="seg">大盘点评</span>
+              <span class="seg">活跃任务 · 1</span>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span>股票代码</span><span class="muted">最多 50 支</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                <span class="tag blue">600519 贵州茅台 ✕</span>
+                <span class="tag blue">00700 腾讯 ✕</span>
+                <span class="tag" style="border:1px dashed var(--hairline);background:transparent">+ 添加</span>
+              </div>
+              <div class="searchbar" style="margin: 0;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="4.5"/><path d="M9.5 9.5l3 3"/></svg>
+                <span>输入股票代码或名称</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span>分析技能</span><span class="muted">可选</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span class="tag blue">📈 趋势</span>
+                <span class="tag purple">🔮 缠论</span>
+                <span class="tag orange">🌊 波浪</span>
+                <span class="tag">📦 箱体</span>
+                <span class="tag">💡 情绪</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span>报告参数</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:14px">报告类型</span><span class="muted" style="font-size:14px">完整 ›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:14px">语言</span><span class="muted" style="font-size:14px">中文 ›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:14px">分析阶段</span><span class="muted" style="font-size:14px">自动判断 ›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:14px">完成后通知</span><span class="toggle"></span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:14px">强制重新分析</span><span class="toggle off"></span></div>
+            </div>
+
+            <div style="margin: 0 16px 12px;"><button class="btn" style="width:100%">提交分析（2 支）</button></div>
+
+            <div class="section-h">活跃任务</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台</div>
+                  <div class="row-meta">62% · 抓取技术指标</div>
+                </div>
+                <svg width="32" height="32" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(118,118,128,0.2)" stroke-width="2.5"/>
+                  <circle cx="16" cy="16" r="13" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="51 100" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+                </svg>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯控股</div>
+                  <div class="row-meta">排队中</div>
+                </div>
+                <span class="tag">pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>③ 提交分析</strong>多股 · 技能 · 参数 · 通知 · 实时任务（POST /analysis/analyze · SSE /tasks/stream）</div>
+  </div>
+
+  <!-- ============ Screen: AI 对话 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h8"/></svg></button>
+          <span class="nav-float-title">AI 对话 · 4 会话</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg></button>
+        </div>
+        <div class="content">
+          <div style="height: calc(844px - 47px); padding-top:104px; padding-bottom: 96px; display:flex; flex-direction:column;">
+            <div style="padding: 4px 16px 8px;">
+              <span class="tag blue">📎 600519 · 贵州茅台</span>
+              <span class="tag" style="margin-left:6px">报告 #4f3a</span>
+            </div>
+            <div class="bubble-user">茅台现在还能买吗？最近回调有点猛</div>
+            <div class="think-block"><span class="spin"></span> 思考中 · 拉取最新行情与新闻…</div>
+            <div class="bubble-ai">
+              <div style="margin-bottom:6px"><strong>结论</strong>：短期偏震荡，中期逻辑未破。</div>
+              <div style="font-size:13px;line-height:1.55">从 K 线看，回踩 5/10 日均线后 MACD 仍在零轴上方，未破坏多头结构。Q1 经营性现金流同比 +18%，估值 PE-TTM 26x 低于近 5 年中位数。</div>
+              <div style="margin-top:8px;font-size:12px;color:var(--text-2)">📊 已调用：实时行情 · 历史 K 线 · 资讯检索 · 财报</div>
+            </div>
+            <div class="bubble-user">那止损位放哪里？</div>
+            <div class="bubble-ai">
+              <div style="font-size:13px;line-height:1.55">建议参考报告中的止损位 <strong>1,520</strong>（前低 + 200 日均线交汇）。若日线收盘跌破，结构性破坏，建议清仓。</div>
+            </div>
+          </div>
+          <div class="skills-row">
+            <span class="skill active">📈 趋势</span>
+            <span class="skill active">🌊 波浪</span>
+            <span class="skill">🔮 缠论</span>
+            <span class="skill">📦 箱体</span>
+          </div>
+          <div class="chat-input">
+            <span class="placeholder">追问…</span>
+            <span class="send"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l12-6-4 14-3-6-5-2z"/></svg></span>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>④ AI 对话</strong>SSE 流 · 思考过程 · 工具调用 · 技能选择 · 报告上下文 (POST /agent/chat/stream)</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">信号 · 选股 · 回测 · 预警</div>
+<div class="stage">
+
+  <!-- ============ Screen: 决策信号 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>决策信号</h1>
+              <div class="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
+            </div>
+            <div class="seg-row">
+              <span class="seg active">全部</span>
+              <span class="seg">买入</span>
+              <span class="seg">卖出</span>
+              <span class="seg">观望</span>
+              <span class="seg">A 股</span>
+              <span class="seg">活跃</span>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat"><div class="lbl">信号总数</div><div class="val">126</div></div>
+              <div class="stat"><div class="lbl">命中率</div><div class="val hl-us">63.5%</div></div>
+              <div class="stat"><div class="lbl">已命中</div><div class="val">52</div></div>
+              <div class="stat"><div class="lbl">未命中</div><div class="val muted">30</div></div>
+            </div>
+
+            <div class="section-h">最近信号</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台 · 600519</div>
+                  <div class="row-meta">2 小时前 · 盘后 · 报告 #4f3a</div>
+                </div>
+                <span class="action-chip">买入</span>
+                <span class="tag green">活跃</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯 · 00700</div>
+                  <div class="row-meta">昨天 · 盘中</div>
+                </div>
+                <span class="action-chip">观望</span>
+                <span class="tag">已关闭</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">NVIDIA · NVDA</div>
+                  <div class="row-meta">昨天 · 盘前</div>
+                </div>
+                <span class="action-chip">减仓</span>
+                <span class="tag green">命中</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Apple · AAPL</div>
+                  <div class="row-meta">3 天前</div>
+                </div>
+                <span class="action-chip">持有</span>
+                <span class="tag red">未命中</span>
+              </div>
+            </div>
+
+            <div class="section-h">详情抽屉（拉起预览）</div>
+            <div class="card" style="padding-top:6px">
+              <div class="sheet-grabber" style="background:var(--hairline-strong);width:36px;height:5px;border-radius:3px;margin:0 auto 8px"></div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                <div>
+                  <div style="font-size:18px;font-weight:600">贵州茅台 · 买入</div>
+                  <div class="muted" style="font-size:12px;margin-top:2px">置信 0.78 · 盘后 · 来源 #4f3a</div>
+                </div>
+                <span class="tag green">活跃</span>
+              </div>
+              <div class="strategy-grid" style="margin-bottom:8px">
+                <div class="item"><div class="lbl">入场</div><div class="val">1,580</div></div>
+                <div class="item"><div class="lbl">止损</div><div class="val" style="color:var(--down-cn)">1,520</div></div>
+                <div class="item"><div class="lbl">目标</div><div class="val" style="color:var(--up-cn)">1,780</div></div>
+                <div class="item"><div class="lbl">失效</div><div class="val muted">7 天</div></div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn subtle" style="flex:1;height:36px;font-size:13px">👍 有用</button>
+                <button class="btn subtle" style="flex:1;height:36px;font-size:13px">👎 无效</button>
+                <button class="btn subtle" style="flex:1;height:36px;font-size:13px">关闭信号</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑥ 决策信号</strong>过滤 · 统计 · 卡片 · 详情抽屉（反馈/状态/outcomes · GET /decision-signals）</div>
+  </div>
+
+  <!-- ============ Screen: AlphaSift 选股 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>选股</h1></div>
+
+            <div class="section-h">热点主题</div>
+            <div class="card" style="padding:10px 12px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="padding:10px 12px;background:rgba(184,137,90,0.08);border-radius:10px">
+                  <div style="font-size:13px;font-weight:600">AI 算力</div>
+                  <svg viewBox="0 0 80 24" style="width:100%;height:24px;margin-top:6px"><polyline fill="none" stroke="var(--up-cn)" stroke-width="1.4" points="0,18 12,16 24,12 36,14 48,8 60,10 72,4 80,6"/></svg>
+                  <div class="muted" style="font-size:11px;margin-top:4px">12 只股票 · ↑ 8.2%</div>
+                </div>
+                <div style="padding:10px 12px;background:rgba(91,141,239,0.08);border-radius:10px">
+                  <div style="font-size:13px;font-weight:600">机器人</div>
+                  <svg viewBox="0 0 80 24" style="width:100%;height:24px;margin-top:6px"><polyline fill="none" stroke="var(--up-cn)" stroke-width="1.4" points="0,12 12,16 24,10 36,14 48,12 60,8 72,10 80,4"/></svg>
+                  <div class="muted" style="font-size:11px;margin-top:4px">9 只 · ↑ 5.4%</div>
+                </div>
+                <div style="padding:10px 12px;background:rgba(58,164,107,0.08);border-radius:10px">
+                  <div style="font-size:13px;font-weight:600">新能源</div>
+                  <svg viewBox="0 0 80 24" style="width:100%;height:24px;margin-top:6px"><polyline fill="none" stroke="var(--down-cn)" stroke-width="1.4" points="0,8 12,10 24,12 36,16 48,18 60,14 72,18 80,20"/></svg>
+                  <div class="muted" style="font-size:11px;margin-top:4px">22 只 · ↓ 2.1%</div>
+                </div>
+                <div style="padding:10px 12px;background:rgba(161,110,224,0.08);border-radius:10px">
+                  <div style="font-size:13px;font-weight:600">医药</div>
+                  <svg viewBox="0 0 80 24" style="width:100%;height:24px;margin-top:6px"><polyline fill="none" stroke="var(--up-cn)" stroke-width="1.4" points="0,16 12,14 24,16 36,12 48,10 60,12 72,8 80,10"/></svg>
+                  <div class="muted" style="font-size:11px;margin-top:4px">15 只 · ↑ 3.8%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-h">策略选股</div>
+            <div class="card">
+              <div class="card-h"><span>市场 · 策略 · 数量</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">市场</span><span class="muted" style="font-size:14px">A 股 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">策略</span><span class="muted" style="font-size:14px">短线突破 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:14px">最大结果</span><span class="muted" style="font-size:14px">20 ›</span></div>
+            </div>
+            <div style="margin: 0 16px 12px;"><button class="btn" style="width:100%">执行选股</button></div>
+
+            <div class="section-h">候选股（已完成 · 8）</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">中科曙光</div>
+                  <div class="row-meta">603019 · AI 算力 · 评分 92</div>
+                </div>
+                <span class="chip up-cn">+5.2%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">寒武纪</div>
+                  <div class="row-meta">688256 · AI 算力 · 评分 88</div>
+                </div>
+                <span class="chip up-cn">+7.8%</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">海光信息</div>
+                  <div class="row-meta">688041 · AI 算力 · 评分 85</div>
+                </div>
+                <span class="chip up-cn">+3.1%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑦ AlphaSift 选股</strong>热点主题 · 策略选股 · 候选列表（POST /alphasift/screen/tasks）</div>
+  </div>
+
+  <!-- ============ Screen: 回测 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>回测</h1></div>
+
+            <div class="card">
+              <div class="card-h"><span>参数</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">股票筛选</span><span class="muted" style="font-size:14px">全部 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">评估窗口</span><span class="muted" style="font-size:14px">5 日 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">阶段</span><span class="muted" style="font-size:14px">盘后 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--hairline)"><span style="font-size:14px">日期范围</span><span class="muted" style="font-size:14px">近 90 天 ›</span></div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:14px">强制重跑</span><span class="toggle off"></span></div>
+            </div>
+            <div style="margin:0 16px 12px"><button class="btn" style="width:100%">运行回测</button></div>
+
+            <div class="section-h">总体性能</div>
+            <div class="stat-grid">
+              <div class="stat"><div class="lbl">方向准确率</div><div class="val hl-us">68.4%</div></div>
+              <div class="stat"><div class="lbl">胜率</div><div class="val">61.2%</div></div>
+              <div class="stat"><div class="lbl">平均收益</div><div class="val hl">+2.34%</div></div>
+              <div class="stat"><div class="lbl">止损率</div><div class="val lo">8.2%</div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span>阶段分布</span></div>
+              <div class="bar-row"><span class="lab">盘前</span><span class="barbg"><span class="fill" style="width:35%;background:#5b8def"></span></span><span class="num">28 次</span></div>
+              <div class="bar-row"><span class="lab">盘中</span><span class="barbg"><span class="fill" style="width:62%;background:var(--accent)"></span></span><span class="num">52 次</span></div>
+              <div class="bar-row"><span class="lab">盘后</span><span class="barbg"><span class="fill" style="width:48%;background:#7c5fb5"></span></span><span class="num">40 次</span></div>
+              <div class="bar-row"><span class="lab">未知</span><span class="barbg"><span class="fill" style="width:15%;background:rgba(120,120,128,0.6)"></span></span><span class="num">12 次</span></div>
+            </div>
+
+            <div class="section-h">个股结果</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">贵州茅台</div>
+                  <div class="row-meta">06-22 · 盘后 · 预测 多 · 实际 多</div>
+                </div>
+                <span class="tag green">命中</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">腾讯</div>
+                  <div class="row-meta">06-21 · 盘中 · 预测 空 · 实际 多</div>
+                </div>
+                <span class="tag red">未命中</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Apple</div>
+                  <div class="row-meta">06-20 · 盘前 · 预测 多 · 止盈</div>
+                </div>
+                <span class="tag green">止盈</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑧ 回测</strong>参数 · 总体性能 · 阶段分布 · 个股结果（POST /backtest/run · GET /backtest/results）</div>
+  </div>
+
+  <!-- ============ Screen: 预警 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>预警</h1>
+              <div class="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></div>
+            </div>
+            <div class="seg-row">
+              <span class="seg active">规则</span>
+              <span class="seg">触发历史</span>
+              <span class="seg">通知记录</span>
+            </div>
+
+            <div class="section-h">规则 · 启用 4 / 共 6</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">茅台跌破 1,520</div>
+                  <div class="row-meta">价格阈值 · 紧急 · 4 渠道</div>
+                </div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">自选股 5% 异动</div>
+                  <div class="row-meta">关注列表 · 警告 · 2 渠道</div>
+                </div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">持仓亏损 -8%</div>
+                  <div class="row-meta">投资组合 · 紧急</div>
+                </div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">大盘 RSI &lt; 30</div>
+                  <div class="row-meta">市场 · 信息</div>
+                </div>
+                <span class="toggle off"></span>
+              </div>
+            </div>
+
+            <div class="section-h">最近触发</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">NVIDIA -3.2% 异动</div>
+                  <div class="row-meta">2 小时前 · 推送 ✓ Telegram + 飞书</div>
+                </div>
+                <span class="tag red">紧急</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">茅台日内 +2.5%</div>
+                  <div class="row-meta">3 小时前 · 推送 ✓</div>
+                </div>
+                <span class="tag orange">警告</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">大盘 RSI 超买</div>
+                  <div class="row-meta">昨天 14:30 · 静默（冷却中）</div>
+                </div>
+                <span class="tag">已抑制</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑨ 预警</strong>规则列表 · 启用切换 · 触发历史 · 通知记录（GET/POST /alerts/rules）</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">运维与配置</div>
+<div class="stage">
+
+  <!-- ============ Screen: Token 用量 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="scroll">
+            <div class="nav-large"><h1>Token 用量</h1></div>
+            <div class="seg-row">
+              <span class="seg">今天</span>
+              <span class="seg active">本月</span>
+              <span class="seg">全部</span>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat"><div class="lbl">总 Token</div><div class="val">1.28M</div></div>
+              <div class="stat"><div class="lbl">调用次数</div><div class="val">2,148</div></div>
+              <div class="stat"><div class="lbl">Prompt</div><div class="val">980k</div></div>
+              <div class="stat"><div class="lbl">Completion</div><div class="val">300k</div></div>
+            </div>
+
+            <div class="section-h">模型分布</div>
+            <div class="card">
+              <div class="bar-row"><span class="lab">gpt-4o</span><span class="barbg"><span class="fill" style="width:62%"></span></span><span class="num">792k</span></div>
+              <div class="bar-row"><span class="lab">claude-3.5</span><span class="barbg"><span class="fill" style="width:24%;background:#5b8def"></span></span><span class="num">308k</span></div>
+              <div class="bar-row"><span class="lab">deepseek</span><span class="barbg"><span class="fill" style="width:12%;background:#7c5fb5"></span></span><span class="num">152k</span></div>
+              <div class="bar-row"><span class="lab">gemini</span><span class="barbg"><span class="fill" style="width:2%;background:#3aa46b"></span></span><span class="num">28k</span></div>
+            </div>
+
+            <div class="section-h">调用类型</div>
+            <div class="card">
+              <div class="bar-row"><span class="lab">个股分析</span><span class="barbg"><span class="fill" style="width:54%"></span></span><span class="num">1,160</span></div>
+              <div class="bar-row"><span class="lab">AI 对话</span><span class="barbg"><span class="fill" style="width:30%;background:#5b8def"></span></span><span class="num">644</span></div>
+              <div class="bar-row"><span class="lab">大盘点评</span><span class="barbg"><span class="fill" style="width:16%;background:#7c5fb5"></span></span><span class="num">344</span></div>
+            </div>
+
+            <div class="section-h">最近调用</div>
+            <div class="list">
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">14:32 · 个股分析 · gpt-4o</div><div class="row-meta">prompt 4.2k · completion 1.1k · 5.3k</div></div></div>
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">14:21 · 对话 · claude-3.5</div><div class="row-meta">prompt 2.8k · completion 0.6k · 3.4k</div></div></div>
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">14:08 · 大盘点评 · gpt-4o</div><div class="row-meta">prompt 6.5k · completion 2.0k · 8.5k</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar-wrap"><div class="tabbar">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13l4-4 4 4 4-6 6 7v3H3z"/></svg>行情</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h12l2 2v14H5z"/></svg>分析</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h14v10H8l-3 3z"/></svg>助手</div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/></svg>组合</div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0H4z"/></svg>我的</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑩ Token 用量</strong>周期切换 · 总览 · 模型/类型分布 · 调用列表（GET /usage/dashboard）</div>
+  </div>
+
+  <!-- ============ Screen: LLM 通道编辑 (Settings 子页) ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3l-6 6 6 6"/></svg></button>
+          <span class="nav-float-title">LLM 通道</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg></button>
+        </div>
+        <div class="content">
+          <div class="scroll-noTab" style="padding-top: 56px;">
+            <div class="section-h">通道列表 · 4</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">OpenAI · 主</div>
+                  <div class="row-meta">gpt-4o, gpt-4o-mini · 已连接 32ms</div>
+                </div>
+                <span class="tag green">主</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Anthropic</div>
+                  <div class="row-meta">claude-3.5-sonnet · 备选</div>
+                </div>
+                <span class="tag blue">备</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">DeepSeek</div>
+                  <div class="row-meta">deepseek-chat · 已连接</div>
+                </div>
+                <span class="tag">备</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <div class="stock-name">Ollama (本地)</div>
+                  <div class="row-meta">连接失败 · localhost:11434</div>
+                </div>
+                <span class="tag red">离线</span>
+                <span class="chev muted">›</span>
+              </div>
+            </div>
+
+            <div class="section-h">编辑：OpenAI · 主</div>
+            <div class="nav-list">
+              <div class="field">
+                <div class="lbl">通道名称</div>
+                <input class="val-input" value="OpenAI 主通道" />
+              </div>
+              <div class="field">
+                <div class="lbl">协议</div>
+                <input class="val-input" value="OpenAI 兼容" />
+              </div>
+              <div class="field">
+                <div class="lbl">Base URL</div>
+                <input class="val-input" value="https://api.openai.com/v1" />
+              </div>
+              <div class="field">
+                <div class="lbl">API Key</div>
+                <input class="val-input" value="sk-•••••••••••••" />
+              </div>
+              <div class="row">
+                <span class="lead"><span class="ico" style="background:#5b8def">⟳</span> 自动发现模型</span>
+                <span class="muted" style="font-size:13px">12 个 ›</span>
+              </div>
+              <div class="row">
+                <span class="lead"><span class="ico" style="background:#3aa46b">▶︎</span> 测试连接</span>
+                <span class="muted" style="font-size:13px">JSON ✓ Tools ✓ Vision ✓</span>
+              </div>
+            </div>
+
+            <div class="section-h">运行时参数</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead">主模型</span><span class="muted" style="font-size:14px">gpt-4o ›</span></div>
+              <div class="row"><span class="lead">Agent 模型</span><span class="muted" style="font-size:14px">gpt-4o ›</span></div>
+              <div class="row"><span class="lead">Vision 模型</span><span class="muted" style="font-size:14px">gpt-4o ›</span></div>
+              <div class="row"><span class="lead">Temperature</span><span class="muted" style="font-size:14px">0.7</span></div>
+            </div>
+
+            <div style="margin: 12px 16px 24px; display:flex; gap:8px">
+              <button class="btn subtle" style="flex:1">取消</button>
+              <button class="btn" style="flex:1">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑪ LLM 通道</strong>列表 · 编辑 · 自动发现模型 · 测试连接 · 运行时参数（POST /system/config/llm/*）</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">设置子页（次级表单）</div>
+<div class="stage">
+
+  <!-- ============ 通知通道测试 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3l-6 6 6 6"/></svg></button>
+          <span class="nav-float-title">通知通道</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg></button>
+        </div>
+        <div class="content">
+          <div class="scroll-noTab" style="padding-top: 56px;">
+            <div class="section-h">已配置 · 4</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow"><div class="stock-name">Telegram · 主</div><div class="row-meta">@dsa_alert_bot · 上次推送 2 小时前</div></div>
+                <span class="tag green">在线</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name">飞书 · 群机器人</div><div class="row-meta">投研群 · webhook</div></div>
+                <span class="tag green">在线</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name">邮件 · SMTP</div><div class="row-meta">smtp.gmail.com:587</div></div>
+                <span class="tag orange">未测试</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name">企业微信</div><div class="row-meta">webhook 测试失败</div></div>
+                <span class="tag red">失败</span>
+                <span class="chev muted">›</span>
+              </div>
+            </div>
+
+            <div class="section-h">发送测试 · Telegram</div>
+            <div class="nav-list">
+              <div class="field"><div class="lbl">渠道</div><input class="val-input" value="Telegram · 主"/></div>
+              <div class="field"><div class="lbl">标题</div><input class="val-input" value="DSA 测试通知"/></div>
+              <div class="field"><div class="lbl">内容</div><input class="val-input" value="这是一条来自 iOS 的测试通知。"/></div>
+              <div class="field"><div class="lbl">超时（秒）</div><input class="val-input" value="10"/></div>
+            </div>
+            <div style="margin: 12px 16px"><button class="btn" style="width:100%">发送测试</button></div>
+
+            <div class="section-h">最近测试结果</div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:600">Telegram · 主</span>
+                <span class="tag green">成功 · 412ms</span>
+              </div>
+              <div class="muted" style="font-size:12px;line-height:1.5">已投递到 chat_id:-1001xxxx · message_id:8842 · attempt 1/1</div>
+            </div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:600">企业微信</span>
+                <span class="tag red">失败 · 3.2s</span>
+              </div>
+              <div class="muted" style="font-size:12px;line-height:1.5">errcode 93000 · invalid webhook · attempt 3/3</div>
+            </div>
+
+            <div class="section-h">支持的渠道</div>
+            <div class="card">
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span class="tag blue">Telegram</span>
+                <span class="tag blue">飞书 / Lark</span>
+                <span class="tag blue">企业微信</span>
+                <span class="tag">邮件 SMTP</span>
+                <span class="tag">Pushover</span>
+                <span class="tag">ntfy</span>
+                <span class="tag">Gotify</span>
+                <span class="tag">PushPlus</span>
+                <span class="tag">ServerChan3</span>
+                <span class="tag">Discord</span>
+                <span class="tag">Slack</span>
+                <span class="tag">钉钉</span>
+                <span class="tag">AstrBot</span>
+                <span class="tag">自定义 Webhook</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑫ 通知通道</strong>14 种渠道 · 列表 · 测试发送 · 投递结果（POST /system/config/notification/test-channel）</div>
+  </div>
+
+  <!-- ============ 调度器 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3l-6 6 6 6"/></svg></button>
+          <span class="nav-float-title">定时调度</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg></button>
+        </div>
+        <div class="content">
+          <div class="scroll-noTab" style="padding-top: 56px;">
+            <div class="section-h">运行状态</div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div>
+                  <div style="font-size:17px;font-weight:600">已启用</div>
+                  <div class="muted" style="font-size:12px;margin-top:2px">runtime scheduler · 接管中</div>
+                </div>
+                <span class="toggle"></span>
+              </div>
+              <div class="bar-row" style="padding:4px 0"><span class="lab">下次执行</span><span class="num" style="text-align:left;width:auto;flex:1">明天 09:00</span></div>
+              <div class="bar-row" style="padding:4px 0"><span class="lab">上次执行</span><span class="num" style="text-align:left;width:auto;flex:1;color:var(--up-us)">今天 09:00 ✓</span></div>
+              <div class="bar-row" style="padding:4px 0"><span class="lab">当前任务</span><span class="num" style="text-align:left;width:auto;flex:1">空闲</span></div>
+            </div>
+
+            <div class="section-h">定时任务 · 3 个时间</div>
+            <div class="list">
+              <div class="row">
+                <div class="grow"><div class="stock-name mono">09:00</div><div class="row-meta">盘前 · 全市场分析 · 推送</div></div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name mono">12:30</div><div class="row-meta">午间 · 自选股</div></div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name mono">16:00</div><div class="row-meta">盘后 · 大盘点评 + 个股</div></div>
+                <span class="toggle"></span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name mono">21:30</div><div class="row-meta">夜盘 · 美股盘前</div></div>
+                <span class="toggle off"></span>
+              </div>
+            </div>
+            <div style="margin:12px 16px;display:flex;gap:8px">
+              <button class="btn subtle" style="flex:1">+ 新增时间</button>
+              <button class="btn" style="flex:1">立即运行一次</button>
+            </div>
+
+            <div class="section-h">范围与参数</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead">分析范围</span><span class="muted" style="font-size:14px">自选股（12 支） ›</span></div>
+              <div class="row"><span class="lead">默认报告类型</span><span class="muted" style="font-size:14px">完整 ›</span></div>
+              <div class="row"><span class="lead">通知</span><span class="toggle"></span></div>
+              <div class="row"><span class="lead">Dry-run（不实际推送）</span><span class="toggle off"></span></div>
+            </div>
+
+            <div class="section-h">最近 5 次运行</div>
+            <div class="list">
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">06-23 09:00 · 12 支</div><div class="row-meta">耗时 4m18s</div></div><span class="tag green">成功</span></div>
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">06-22 16:00 · 大盘点评</div><div class="row-meta">耗时 1m02s</div></div><span class="tag green">成功</span></div>
+              <div class="row"><div class="grow"><div class="stock-name" style="font-size:14px">06-22 09:00 · 12 支</div><div class="row-meta">耗时 4m41s</div></div><span class="tag orange">部分失败</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑬ 定时调度</strong>多时间定时 · 范围 / 参数 · 立即运行 · 最近运行（GET /system/scheduler/status · POST /system/scheduler/run-now）</div>
+  </div>
+
+  <!-- ============ 智能导入 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3l-6 6 6 6"/></svg></button>
+          <span class="nav-float-title">智能导入自选</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="currentColor"><circle cx="4" cy="9" r="1.4"/><circle cx="9" cy="9" r="1.4"/><circle cx="14" cy="9" r="1.4"/></svg></button>
+        </div>
+        <div class="content">
+          <div class="scroll-noTab" style="padding-top: 56px;">
+            <div class="seg-row">
+              <span class="seg active">📷 图片</span>
+              <span class="seg">📄 文件</span>
+              <span class="seg">📋 文本</span>
+            </div>
+
+            <div class="card" style="text-align:center;padding:24px 16px;border:2px dashed var(--hairline);background:rgba(184,137,90,0.04)">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="var(--accent)" stroke-width="1.6" style="margin:0 auto 8px;display:block"><rect x="6" y="8" width="28" height="22" rx="3"/><circle cx="14" cy="16" r="2"/><path d="M6 26l8-8 12 10"/></svg>
+              <div style="font-size:14px;font-weight:600">点击选择 / 拖入截图</div>
+              <div class="muted" style="font-size:12px;margin-top:4px">支持券商持仓、股票群截图 · OCR 自动识别</div>
+            </div>
+
+            <div class="section-h">已识别 · 8 支（已勾选 6）</div>
+            <div class="list">
+              <div class="row">
+                <input type="checkbox" checked style="accent-color:var(--accent);width:18px;height:18px">
+                <div class="grow"><div class="stock-name">贵州茅台</div><div class="row-meta">600519 · 上交所</div></div>
+                <span class="tag green">高</span>
+              </div>
+              <div class="row">
+                <input type="checkbox" checked style="accent-color:var(--accent);width:18px;height:18px">
+                <div class="grow"><div class="stock-name">五粮液</div><div class="row-meta">000858 · 深交所</div></div>
+                <span class="tag green">高</span>
+              </div>
+              <div class="row">
+                <input type="checkbox" checked style="accent-color:var(--accent);width:18px;height:18px">
+                <div class="grow"><div class="stock-name">招商银行</div><div class="row-meta">600036 · 上交所</div></div>
+                <span class="tag green">高</span>
+              </div>
+              <div class="row">
+                <input type="checkbox" checked style="accent-color:var(--accent);width:18px;height:18px">
+                <div class="grow"><div class="stock-name">隆基绿能</div><div class="row-meta">601012</div></div>
+                <span class="tag orange">中</span>
+              </div>
+              <div class="row">
+                <input type="checkbox" style="width:18px;height:18px">
+                <div class="grow"><div class="stock-name">XX 科技</div><div class="row-meta">代码识别失败</div></div>
+                <span class="tag red">低</span>
+              </div>
+            </div>
+
+            <div style="margin:12px 16px;display:flex;gap:8px">
+              <button class="btn subtle" style="flex:1">取消</button>
+              <button class="btn" style="flex:1">合并到自选（6 支）</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑭ 智能导入自选</strong>图片 OCR / CSV / 文本 · 置信度标记 · 多选合并（POST /stocks/extract-from-image · /parse-import）</div>
+  </div>
+
+  <!-- ============ Env 备份 + 认证 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div class="nav-floating">
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3l-6 6 6 6"/></svg></button>
+          <span class="nav-float-title">认证 · 配置备份</span>
+          <button class="float-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M9 6v3l2 2"/></svg></button>
+        </div>
+        <div class="content">
+          <div class="scroll-noTab" style="padding-top: 56px;">
+            <div class="section-h">认证</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead">启用密码认证</span><span class="toggle"></span></div>
+              <div class="row"><span class="lead">会话有效期</span><span class="muted" style="font-size:14px">24 小时 ›</span></div>
+              <div class="row"><span class="lead">登录失败限速</span><span class="muted" style="font-size:14px">5 次 / 5 分钟</span></div>
+            </div>
+
+            <div class="section-h">修改密码</div>
+            <div class="nav-list">
+              <div class="field"><div class="lbl">当前密码</div><input class="val-input" value="••••••••"/></div>
+              <div class="field"><div class="lbl">新密码（≥ 6 位）</div><input class="val-input" placeholder="输入新密码"/></div>
+              <div class="field"><div class="lbl">确认新密码</div><input class="val-input" placeholder="再次输入"/></div>
+            </div>
+            <div style="margin:8px 16px 12px"><button class="btn" style="width:100%">提交修改</button></div>
+
+            <div class="section-h">配置备份（.env）</div>
+            <div class="nav-list">
+              <div class="row"><span class="lead"><span class="ico" style="background:#5b8def">↓</span> 导出 .env</span><span class="muted" style="font-size:13px">最近：今天 14:08</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#3aa46b">↑</span> 导入 .env</span><span class="chev">›</span></div>
+              <div class="row"><span class="lead"><span class="ico" style="background:#e0a23a">⚙</span> 校验配置</span><span class="muted" style="font-size:13px">无问题</span></div>
+            </div>
+
+            <div class="section-h">导入预览（dry-run）</div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+                <span><strong>新增</strong> 4 项</span>
+                <span><strong>修改</strong> 12 项</span>
+                <span><strong>删除</strong> 2 项</span>
+              </div>
+              <div class="muted" style="font-size:12px;line-height:1.6">
+                + LLM_PROVIDER_OPENAI_KEY<br>
+                ± SCHEDULE_TIMES: 09:00,16:00 → 09:00,12:30,16:00<br>
+                ± NOTIFICATION_TELEGRAM_TOKEN: ••• → ••• (变更)<br>
+                − DEPRECATED_FLAG_X
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn subtle" style="flex:1;height:36px;font-size:13px">取消</button>
+                <button class="btn" style="flex:1;height:36px;font-size:13px">确认导入</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑮ 认证 · 配置备份</strong>密码开关 · 改密 · .env 导出 / 导入 / 校验（POST /auth/settings · /system/config/import）</div>
+  </div>
+
+</div>
+
+<!-- ===================================================================== -->
+<div class="group-h">抽屉 · Sheet（次级浮层）</div>
+<div class="stage">
+
+  <!-- ============ RunFlow 抽屉 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div style="position:absolute;inset:0;filter:blur(6px) saturate(0.85);opacity:0.4;background:linear-gradient(180deg,rgba(184,137,90,0.1),rgba(91,141,239,0.05) 60%,transparent)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:78%;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -16px 60px -20px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column">
+          <div class="sheet-grabber" style="margin:8px auto 0"></div>
+          <div style="padding:8px 20px 12px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:18px;font-weight:600">运行流 · RunFlow</div>
+              <div class="muted" style="font-size:12px;margin-top:2px">trace 8f3a…0c · 4m18s · <span style="color:var(--up-us)">正常</span></div>
+            </div>
+            <button class="float-btn" style="width:32px;height:32px;color:var(--text-2)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l8 8M13 5l-8 8"/></svg></button>
+          </div>
+          <div class="seg-row" style="padding:0 16px 8px">
+            <span class="seg active">流程图</span>
+            <span class="seg">事件</span>
+            <span class="seg">节点详情</span>
+          </div>
+          <div style="padding:0 16px;flex:1;overflow:hidden">
+            <svg viewBox="0 0 340 240" style="width:100%;height:auto">
+              <defs>
+                <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="var(--text-3)"/></marker>
+              </defs>
+              <line x1="60" y1="40" x2="120" y2="40" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="180" y1="40" x2="240" y2="40" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="150" y1="60" x2="150" y2="100" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="60" y1="120" x2="120" y2="120" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="180" y1="120" x2="240" y2="120" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="150" y1="140" x2="150" y2="180" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <line x1="120" y1="200" x2="180" y2="200" stroke="var(--text-3)" stroke-width="1" marker-end="url(#arr)"/>
+              <g>
+                <rect x="10" y="20" width="50" height="40" rx="8" fill="rgba(58,164,107,0.15)" stroke="#3aa46b" stroke-width="1"/>
+                <text x="35" y="36" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">行情</text>
+                <text x="35" y="50" text-anchor="middle" font-size="8" fill="#3aa46b">✓ 320ms</text>
+                <rect x="120" y="20" width="60" height="40" rx="8" fill="rgba(58,164,107,0.15)" stroke="#3aa46b" stroke-width="1"/>
+                <text x="150" y="36" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">技术指标</text>
+                <text x="150" y="50" text-anchor="middle" font-size="8" fill="#3aa46b">✓ 1.2s</text>
+                <rect x="240" y="20" width="60" height="40" rx="8" fill="rgba(58,164,107,0.15)" stroke="#3aa46b" stroke-width="1"/>
+                <text x="270" y="36" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">财报</text>
+                <text x="270" y="50" text-anchor="middle" font-size="8" fill="#3aa46b">✓ 880ms</text>
+                <rect x="120" y="100" width="60" height="40" rx="8" fill="rgba(91,141,239,0.15)" stroke="#5b8def" stroke-width="1"/>
+                <text x="150" y="116" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">新闻</text>
+                <text x="150" y="130" text-anchor="middle" font-size="8" fill="#5b8def">⊙ 8 条</text>
+                <rect x="10" y="100" width="50" height="40" rx="8" fill="rgba(224,162,58,0.15)" stroke="#e0a23a" stroke-width="1"/>
+                <text x="35" y="116" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">板块</text>
+                <text x="35" y="130" text-anchor="middle" font-size="8" fill="#e0a23a">↻ 缓存</text>
+                <rect x="240" y="100" width="60" height="40" rx="8" fill="rgba(58,164,107,0.15)" stroke="#3aa46b" stroke-width="1"/>
+                <text x="270" y="116" text-anchor="middle" font-size="9" fill="var(--text)" font-weight="600">情绪</text>
+                <text x="270" y="130" text-anchor="middle" font-size="8" fill="#3aa46b">✓</text>
+                <rect x="120" y="180" width="60" height="40" rx="8" fill="rgba(184,137,90,0.18)" stroke="var(--accent)" stroke-width="1.5"/>
+                <text x="150" y="196" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">LLM</text>
+                <text x="150" y="210" text-anchor="middle" font-size="8" fill="var(--accent)">⏱ 2m08s</text>
+                <rect x="180" y="190" width="80" height="22" rx="6" fill="rgba(58,164,107,0.18)"/>
+                <text x="220" y="204" text-anchor="middle" font-size="9" fill="#3aa46b" font-weight="600">报告完成 ✓</text>
+              </g>
+            </svg>
+          </div>
+          <div class="card" style="margin:8px 16px">
+            <div class="card-h"><span>选中节点：LLM</span><span class="tag green">成功</span></div>
+            <div style="font-size:13px;line-height:1.5">model: gpt-4o · prompt 4,217 tokens · completion 1,082 · 总耗时 2m08s</div>
+            <div class="muted" style="font-size:11px;margin-top:6px">tools: search_news, get_quote, get_kline, get_fundamentals</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑯ RunFlow 抽屉</strong>节点图 · 事件流 · 节点详情 · 工具调用（GET /history/{id}/flow · medium/large detents）</div>
+  </div>
+
+  <!-- ============ Markdown 全文抽屉 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div style="position:absolute;inset:0;filter:blur(8px) saturate(0.7);opacity:0.4;background:linear-gradient(180deg,rgba(91,141,239,0.05),transparent 60%)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:90%;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -16px 60px -20px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column">
+          <div class="sheet-grabber" style="margin:8px auto 0"></div>
+          <div style="padding:6px 20px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--hairline)">
+            <div>
+              <div style="font-size:16px;font-weight:600">完整报告 · Markdown</div>
+              <div class="muted" style="font-size:11px;margin-top:1px">贵州茅台 · 600519 · 2 小时前</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="float-btn" style="width:32px;height:32px;color:var(--text-2)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h10M4 9h8M4 12h10M4 15h6"/></svg></button>
+              <button class="float-btn" style="width:32px;height:32px;color:var(--text-2)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="5" y="3" width="9" height="11" rx="1.5"/><path d="M3 6v9h9"/></svg></button>
+            </div>
+          </div>
+          <div style="padding:14px 20px 0;overflow:hidden;flex:1;font-family:ui-serif,Georgia,'PingFang SC',serif;line-height:1.7;font-size:14px">
+            <div style="font-family:-apple-system,system-ui;font-size:22px;font-weight:700;letter-spacing:-0.4px;margin-bottom:4px">贵州茅台 个股深度分析</div>
+            <div class="muted" style="font-family:-apple-system,system-ui;font-size:12px;margin-bottom:14px">600519.SH · 2026-06-23 15:30 · 完整报告</div>
+            <h3 style="font-family:-apple-system,system-ui;font-size:16px;font-weight:600;margin:0 0 6px">一、操作建议</h3>
+            <p style="margin:0 0 12px">综合行情、基本面、资金面三方面信号，<strong>给出"买入"评级</strong>，置信度 0.78。建议在 1,580–1,620 区间分批建仓，仓位上限 30%，破位 1,520 严格止损。</p>
+            <h3 style="font-family:-apple-system,system-ui;font-size:16px;font-weight:600;margin:0 0 6px">二、技术面</h3>
+            <p style="margin:0 0 8px">日线收盘 1,680 元，<strong style="color:var(--up-cn)">+1.23%</strong>。MACD 已在零轴上方运行 18 个交易日，DIF 与 DEA 形成持续金叉…</p>
+            <ul style="margin:0 0 12px;padding-left:18px">
+              <li>5 日均线：1,648（多头排列）</li>
+              <li>10 日均线：1,612</li>
+              <li>20 日均线：1,565</li>
+              <li>200 日均线：1,498（中期支撑）</li>
+            </ul>
+            <h3 style="font-family:-apple-system,system-ui;font-size:16px;font-weight:600;margin:0 0 6px">三、基本面</h3>
+            <p style="margin:0">Q1 2026 营业收入同比 <strong style="color:var(--up-cn)">+13.2%</strong>，归母净利润 <strong style="color:var(--up-cn)">+15.8%</strong>。经营性现金流 …</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑰ Markdown 全文抽屉</strong>大字号阅读 · Serif · 顶部分享 / 复制 · large detent（GET /history/{id}/markdown）</div>
+  </div>
+
+  <!-- ============ 个股历史趋势抽屉 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div style="position:absolute;inset:0;filter:blur(8px) saturate(0.8);opacity:0.4;background:linear-gradient(180deg,rgba(184,137,90,0.05),transparent 60%)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:88%;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -16px 60px -20px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column">
+          <div class="sheet-grabber" style="margin:8px auto 0"></div>
+          <div style="padding:6px 20px 8px">
+            <div style="font-size:18px;font-weight:600">贵州茅台 · 历史分析趋势</div>
+            <div class="muted" style="font-size:12px;margin-top:2px">最近 30 天 · 14 份报告</div>
+          </div>
+          <div class="seg-row" style="padding:0 16px 8px">
+            <span class="seg">7 天</span>
+            <span class="seg active">30 天</span>
+            <span class="seg">90 天</span>
+            <span class="seg">全部</span>
+          </div>
+          <div style="padding:0 8px;margin-bottom:8px">
+            <svg viewBox="0 0 360 100" style="width:100%;height:auto">
+              <defs>
+                <linearGradient id="histGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="var(--up-cn)" stop-opacity="0.18"/>
+                  <stop offset="100%" stop-color="var(--up-cn)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M10 80 L40 78 L70 70 L100 60 L130 65 L160 50 L190 45 L220 38 L250 34 L280 28 L310 26 L350 18 L350 100 L10 100 Z" fill="url(#histGrad)"/>
+              <path d="M10 80 L40 78 L70 70 L100 60 L130 65 L160 50 L190 45 L220 38 L250 34 L280 28 L310 26 L350 18" fill="none" stroke="var(--up-cn)" stroke-width="1.6" stroke-linejoin="round"/>
+              <circle cx="40" cy="78" r="3" fill="#3aa46b"/>
+              <circle cx="100" cy="60" r="3" fill="#3aa46b"/>
+              <circle cx="160" cy="50" r="3" fill="#e0a23a"/>
+              <circle cx="220" cy="38" r="3" fill="#3aa46b"/>
+              <circle cx="280" cy="28" r="3" fill="#3aa46b"/>
+              <circle cx="350" cy="18" r="4" fill="var(--accent)"/>
+            </svg>
+          </div>
+          <div class="section-h" style="padding:8px 20px 4px">报告时间线</div>
+          <div style="overflow:hidden;flex:1;padding:0 16px">
+            <div style="background:var(--surface);border-radius:12px;border:0.5px solid var(--hairline)">
+              <div class="row">
+                <div class="grow"><div class="stock-name" style="font-size:14px">06-23 15:30 · ¥1,680</div><div class="row-meta hl">+1.23% · 完整报告</div></div>
+                <span class="action-chip">买入</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name" style="font-size:14px">06-22 16:00 · ¥1,659</div><div class="row-meta hl">+0.85%</div></div>
+                <span class="action-chip">买入</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name" style="font-size:14px">06-21 09:00 · ¥1,645</div><div class="row-meta lo">-0.42%</div></div>
+                <span class="action-chip">观望</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name" style="font-size:14px">06-20 16:00 · ¥1,652</div><div class="row-meta hl">+1.05%</div></div>
+                <span class="action-chip">买入</span>
+                <span class="chev muted">›</span>
+              </div>
+              <div class="row">
+                <div class="grow"><div class="stock-name" style="font-size:14px">06-19 09:00 · ¥1,635</div><div class="row-meta hl">+0.32%</div></div>
+                <span class="action-chip">买入</span>
+                <span class="chev muted">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑱ 个股历史趋势</strong>价格曲线 · Action 散点 · 报告时间线（GET /history?stock_code=...）</div>
+  </div>
+
+  <!-- ============ CSV 导入向导 ============ -->
+  <div class="frame-wrap">
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><path d="M1 9h2v2H1zM5 7h2v4H5zM9 5h2v6H9zM13 3h2v8h-2z"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5"/><rect x="2" y="2" width="18" height="8" rx="1.2" fill="currentColor"/><rect x="23.5" y="3.5" width="2" height="5" rx="1" fill="currentColor"/></svg>
+          </span>
+        </div>
+        <div style="position:absolute;inset:0;filter:blur(8px) saturate(0.8);opacity:0.4;background:linear-gradient(180deg,rgba(91,141,239,0.06),transparent 60%)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:90%;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -16px 60px -20px rgba(0,0,0,0.4);overflow:hidden;display:flex;flex-direction:column">
+          <div class="sheet-grabber" style="margin:8px auto 0"></div>
+          <div style="padding:6px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:18px;font-weight:600">CSV 导入持仓</div>
+              <div class="muted" style="font-size:12px;margin-top:2px">第 2 / 3 步 · 预览</div>
+            </div>
+            <button class="float-btn" style="width:32px;height:32px;color:var(--text-2)"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l8 8M13 5l-8 8"/></svg></button>
+          </div>
+          <div style="padding:0 20px 12px;display:flex;align-items:center;gap:6px;font-size:11px">
+            <span style="display:inline-flex;align-items:center;gap:4px;color:var(--up-us)"><span style="width:18px;height:18px;border-radius:50%;background:var(--up-us);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px">✓</span>选择券商</span>
+            <span style="flex:1;height:1px;background:var(--up-us)"></span>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:600"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px">2</span>预览</span>
+            <span style="flex:1;height:1px;background:var(--hairline)"></span>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:var(--text-3)"><span style="width:18px;height:18px;border-radius:50%;background:var(--hairline);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;font-size:10px">3</span>提交</span>
+          </div>
+          <div class="card" style="margin:0 16px 12px">
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <div><span class="muted">券商</span><br><strong>华泰证券</strong></div>
+              <div><span class="muted">文件</span><br><strong>cangwei_2026.csv</strong></div>
+              <div><span class="muted">行数</span><br><strong>48</strong></div>
+            </div>
+          </div>
+          <div class="seg-row" style="padding:0 16px 8px">
+            <span class="seg active">交易 · 32</span>
+            <span class="seg">现金 · 12</span>
+            <span class="seg">公司行动 · 4</span>
+          </div>
+          <div style="overflow:hidden;flex:1;padding:0 16px">
+            <div style="background:var(--surface-2);border-radius:12px;padding:0;border:0.5px solid var(--hairline)">
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:10px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--hairline)">
+                <span>日期</span><span>代码 / 名称</span><span>方向</span><span>数量</span><span>价格</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:12px;border-bottom:0.5px solid var(--hairline)">
+                <span class="mono">06-15</span><span>600519 茅台</span><span class="hl">买入</span><span class="mono">100</span><span class="mono">1,520</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:12px;border-bottom:0.5px solid var(--hairline)">
+                <span class="mono">06-12</span><span>00700 腾讯</span><span class="hl">买入</span><span class="mono">200</span><span class="mono">410</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:12px;border-bottom:0.5px solid var(--hairline)">
+                <span class="mono">06-10</span><span>AAPL Apple</span><span class="hl">买入</span><span class="mono">300</span><span class="mono">175.20</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:12px;border-bottom:0.5px solid var(--hairline)">
+                <span class="mono">06-05</span><span>002594 比亚迪</span><span class="lo">卖出</span><span class="mono">500</span><span class="mono">218</span>
+              </div>
+              <div style="display:grid;grid-template-columns:60px 1fr 60px 60px 70px;gap:6px;padding:8px 12px;font-size:12px;color:var(--text-2)">
+                <span>…</span><span>共 32 条交易</span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin:8px 16px;background:rgba(224,162,58,0.10);border:0.5px solid rgba(224,162,58,0.25)">
+            <div style="font-size:13px;color:#b07b1d;font-weight:600;margin-bottom:4px">⚠ 校验提示 · 2 条</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.5">
+              · 06-12 腾讯单价低于当日最低价，可能为分红除权日<br>
+              · 002594 比亚迪 06-05 卖出后无对应建仓记录
+            </div>
+          </div>
+          <div style="padding:8px 16px 18px;display:flex;gap:8px">
+            <button class="btn subtle" style="flex:1">上一步</button>
+            <button class="btn" style="flex:2">提交（48 条）</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame-label"><strong>⑲ CSV 导入向导</strong>3 步：选择券商 → 预览 → 提交 · 校验提示（POST /portfolio/imports/csv/parse · /commit）</div>
+  </div>
+
+</div>
+
+<div style="max-width:900px;margin:80px auto 0;padding:24px;border:1px solid var(--hairline);border-radius:16px;background:rgba(255,255,255,0.6);backdrop-filter:blur(20px);font-size:13px;color:var(--text-2);line-height:1.7">
+  <strong style="color:var(--text);font-size:14px">说明</strong><br>
+  本视觉稿覆盖 Web 端 11 个页面在 iOS 的对应原生形态。Tab 结构为 <strong>行情 / 分析 / 助手 / 组合 / 我的</strong> 共 5 个：
+  <ul style="margin:8px 0;padding-left:20px">
+    <li><strong>行情</strong>：自选股 + StockBar + 历史报告 + 报告详情（K线/MA/MACD）</li>
+    <li><strong>分析</strong>：分段控件「提交分析 / 大盘点评 / 活跃任务」+ 选股 + 回测</li>
+    <li><strong>助手</strong>：AI 对话（SSE 流 + 思考过程 + 技能）+ 会话管理（侧拉抽屉）</li>
+    <li><strong>组合</strong>：投资组合 + 决策信号 + 预警（分段切换 / 子页）</li>
+    <li><strong>我的</strong>：服务器 baseURL + 主题 + 涨跌色 + LLM 通道 + 通知 + 调度 + Token 用量 + 配置导入导出</li>
+  </ul>
+  Drawer / Modal 在 iOS 用 <code>.presentationDetents([.medium, .large])</code> 实现（如决策信号详情、报告 Markdown、RunFlow、StockHistoryTrend）。
+</div>
+
+</body>
+</html>

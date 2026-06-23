@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [改进] Web 历史报告详情不再内嵌展示 AI 建议卡片，结构化决策信号集中在 AI 建议页查询，并保留按来源报告 ID 筛选或 URL 参数精确定位入口。
 - [改进] Web 主布局将页面级标题与说明收口到顶部面包屑栏，统一主要页面正文宽度、顶部间距、问股/回测控件对齐与关键数据颜色点缀。
 - [chore] 将项目依赖管理从 pip + requirements.txt 迁移到 uv（pyproject.toml + uv.lock）；Dockerfile、CI workflows、桌面端打包脚本、文档与用户面向提示统一更新。
+- [修复] Docker 前端构建阶段改用 Node 22 并固定 npm 11.17.0，规避 npm 10.8.2 在 `npm ci` 中异常退出导致镜像构建失败。
+- [文档] 新增 iOS 原生 App 设计方案 docs/ios-app-design.md 与 21 屏视觉稿 docs/assets/ios-mockup/index.html，1:1 映射 Web 全部 11 个页面 + 设置 4 个子面板（通知通道 / 定时调度 / 智能导入 / 认证与配置备份）+ 4 个抽屉浮层（RunFlow / Markdown 全文 / 个股历史趋势 / CSV 导入向导），支持自部署 baseURL、苹果 HIG 风格、浮空胶囊 Tab、K 线 + MA + MACD。
+- [新功能] 新增 iOS 原生 App SwiftUI 原型工程 apps/dsa-ios/Prototype（Swift Package，iOS 16+）：APIClient / SSEClient / AuthService 网络与会话基础、DesignSystem 组件（PriceCell / ChangeChip / ActionChip / ModuleCard / FloatingBackButton / CapsuleTitle / CapsuleTabBar）、Swift Charts 实现的 K 线 + MA5/10/20 + MACD 副图、登录 / 行情 / 报告详情 / 我的 4 个核心页面与其他 Tab 占位页，支持 Mock 模式与自部署 baseURL 切换；`swift build` 通过。
+- [新功能] iOS 原型补完分析 Tab 与助手 Tab：提交分析（多股 + 技能 + 参数 + 通知 + 强制重分析 + 大盘点评）、AI 对话（SSE 流 + 思考气泡 + 工具调用 + 技能多选）、全局 TaskStreamStore（Mock 进度模拟 + 真实 SSE 订阅 /analysis/tasks/stream）。
+- [新功能] iOS 原型补完组合 Tab 三段切换（总览 / 决策信号 / 预警）：投资组合总权益与每日盈亏、仓位环、持仓列表、风险卡片；决策信号过滤 / 统计 / 反馈 sheet；预警规则启用切换与触发记录。报告详情新增 RunFlow 流程图 / Markdown 全文 / 个股历史趋势 三个 sheet 抽屉。
+- [新功能] iOS 原型最终收尾，覆盖 Web 全部能力：选股 (AlphaSift) / 回测 / Token 用量 / 智能导入自选 4 个工具页，LLM 通道 / 通知通道（14 渠道+测试）/ 定时调度 / 认证+配置备份 4 个系统配置子页，从「我的」入口完整跳转，至此 21 屏视觉稿全部落地为 SwiftUI 实现，`swift build` 无 warning 通过。
 
 ## [3.23.0] - 2026-06-20
 
