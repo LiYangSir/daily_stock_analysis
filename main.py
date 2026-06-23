@@ -1065,7 +1065,14 @@ def start_api_server(host: str, port: int, config: Config) -> None:
     thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
 
-    timeout_seconds = 3.0
+    # Allow ops to extend the readiness wait; cold-starts in Docker on small
+    # VPS hosts can easily take 10-20 seconds (data providers + scheduler +
+    # agent skills initialization). Keep the env var tunable but default to
+    # 30 seconds, which is comfortable for typical deployments.
+    try:
+        timeout_seconds = float(os.environ.get("FASTAPI_START_TIMEOUT_SECONDS", "30"))
+    except ValueError:
+        timeout_seconds = 30.0
     wait_deadline = time.time() + timeout_seconds
     while time.time() < wait_deadline:
         if startup_error:
