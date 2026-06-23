@@ -125,18 +125,31 @@ docker compose -f docker/docker-compose.yml up -d analyzer
 
 ## 8. 反向代理 + HTTPS（公网部署）
 
-```bash
-# 安装 nginx 和 certbot（Let's Encrypt 客户端 + nginx 插件）
-sudo apt-get install -y nginx certbot python3-certbot-nginx
+> 适合把容器跑在 `127.0.0.1:8000`，外面挂 nginx 处理 80/443 + 证书续签。下面用 `stock.quguai.cn` 举例，替换成你自己的域名即可。
 
-# 写一个 nginx 站点配置：80 端口反代到本机 8000
-sudo tee /etc/nginx/sites-available/dsa <<'EOF'
+### 8.1 准备
+
+```bash
+# 1. 在 DNS 控制台把域名 A/AAAA 记录解析到这台服务器 IP
+#    （阿里云 / Cloudflare 等都行）
+
+# 2. 安装 nginx 和 certbot（Let's Encrypt 客户端 + nginx 插件）
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+```
+
+### 8.2 写一份最小 HTTP 站点配置
+
+第一次申请证书时 certbot 需要走 HTTP-01 挑战，所以**先只写 80 端口**。Ubuntu 推荐放在 `/etc/nginx/conf.d/`：
+
+```bash
+# 把站点配置写到 /etc/nginx/conf.d/stock.conf（域名换成你自己的）
+sudo tee /etc/nginx/conf.d/stock.conf > /dev/null <<'EOF'
 server {
     listen 80;
-    server_name your.domain.com;   # 改成你自己的域名
+    server_name stock.quguai.cn;
 
+    # 反代到本机 daily_stock_analysis 容器
     location / {
-        # 反代到本机的 FastAPI 容器
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
 
@@ -146,26 +159,83 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # 报告生成耗时较长，给 5 分钟超时
+        # 报告生成 / Agent 推理可能较久，给 5 分钟超时
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
 
-        # 关闭缓冲，让 SSE / 流式响应实时下发给浏览器
+        # 关闭缓冲，让 SSE / 流式回复实时下发给浏览器
         proxy_buffering off;
     }
+
+    # 设置导入 / 截图等接口允许的最大上传体积
+    client_max_body_size 20m;
 }
 EOF
 
-# 启用站点（创建 sites-enabled 软链）
-sudo ln -sf /etc/nginx/sites-available/dsa /etc/nginx/sites-enabled/dsa
-
-# 检查配置语法 → reload，让新配置生效
+# 检查语法并 reload
 sudo nginx -t && sudo systemctl reload nginx
-
-# 自动申请并配置 Let's Encrypt 证书，certbot 会改写 nginx 配置开 443
-sudo certbot --nginx -d your.domain.com
 ```
 
-启用 HTTPS 后建议在 `.env` 加上 `TRUST_X_FORWARDED_FOR=true` 并重启容器。
+### 8.3 自动签发证书并升级到 HTTPS
+
+```bash
+# certbot 会：申请证书 → 把 80 端口配置改写为 443 + 80→443 跳转 → 自动续签
+sudo certbot --nginx -d stock.quguai.cn
+
+# 确认新配置语法 OK 并 reload（certbot 一般已经做了）
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+执行完后 `/etc/nginx/conf.d/stock.conf` 会被 certbot 重写成下面这种「managed」结构：
+
+```nginx
+server {
+    server_name stock.quguai.cn;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_buffering off;
+    }
+
+    client_max_body_size 20m;
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/stock.quguai.cn/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/stock.quguai.cn/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = stock.quguai.cn) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name stock.quguai.cn;
+    return 404; # managed by Certbot
+}
+```
+
+这种结构后续 `certbot renew` 会自动续签，不需要再手动改。
+
+### 8.4 收尾
+
+```dotenv
+# 在 .env 里加上（HTTPS 部署务必加），并 docker compose ... restart server
+TRUST_X_FORWARDED_FOR=true
+```
+
+这样登录限流和审计日志读到的是真实公网 IP 而不是 nginx 的 127.0.0.1。
+
+> 备注：如果你的服务器走 `/etc/nginx/sites-available/` + `/etc/nginx/sites-enabled/` 这套约定（比如默认的 nginx.conf 里有 `include /etc/nginx/sites-enabled/*;`），把上面 `/etc/nginx/conf.d/stock.conf` 路径改成 `/etc/nginx/sites-available/stock`，再 `ln -sf` 到 sites-enabled 下即可。
 
 ---
 

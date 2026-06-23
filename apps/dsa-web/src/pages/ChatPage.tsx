@@ -7,6 +7,11 @@ import { cn } from '../utils/cn';
 import { agentApi } from '../api/agent';
 import { systemConfigApi } from '../api/systemConfig';
 import { ApiErrorAlert, Badge, Button, ConfirmDialog, EmptyState, InlineAlert, ScrollArea, Tooltip } from '../components/common';
+import {
+  Tooltip as ShadTooltip,
+  TooltipContent as ShadTooltipContent,
+  TooltipTrigger as ShadTooltipTrigger,
+} from '@/components/ui/tooltip';
 import { getParsedApiError } from '../api/error';
 import type { SkillInfo } from '../api/agent';
 import { DashboardStateBlock } from '../components/dashboard';
@@ -154,7 +159,6 @@ const ChatPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
-  const [showSkillDesc, setShowSkillDesc] = useState<string | null>(null);
   const [mobileSkillPickerOpen, setMobileSkillPickerOpen] = useState(false);
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -1322,12 +1326,9 @@ const ChatPage: React.FC = () => {
                     {skills.map((s) => {
                       const checked = selectedSkillIdSet.has(s.id);
                       const disabled = !checked && skillLimitReached;
-                      return (
+                      const labelEl = (
                         <label
-                          key={s.id}
-                          className={`flex items-center gap-1.5 cursor-pointer group relative mt-0.5 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-                          onMouseEnter={() => setShowSkillDesc(s.id)}
-                          onMouseLeave={() => setShowSkillDesc(null)}
+                          className={`flex items-center gap-1.5 cursor-pointer group mt-0.5 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
                           <input
                             type="checkbox"
@@ -1343,13 +1344,23 @@ const ChatPage: React.FC = () => {
                           >
                             {s.name}
                           </span>
-                          {showSkillDesc === s.id && s.description && (
-                            <div className="skill-desc-tooltip">
-                              <p className="skill-title">{s.name}</p>
-                              <p>{s.description}</p>
-                            </div>
-                          )}
                         </label>
+                      );
+                      if (!s.description) {
+                        return <div key={s.id}>{labelEl}</div>;
+                      }
+                      return (
+                        <ShadTooltip key={s.id} delayDuration={150}>
+                          <ShadTooltipTrigger asChild>{labelEl}</ShadTooltipTrigger>
+                          <ShadTooltipContent
+                            side="top"
+                            align="start"
+                            className="max-w-xs whitespace-normal text-left"
+                          >
+                            <p className="font-semibold text-xs mb-1">{s.name}</p>
+                            <p className="text-xs leading-relaxed">{s.description}</p>
+                          </ShadTooltipContent>
+                        </ShadTooltip>
                       );
                     })}
                   </div>
