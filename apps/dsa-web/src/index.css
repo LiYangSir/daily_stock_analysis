@@ -98,6 +98,14 @@
   --login-brand-button-end: var(--primary);
   --login-brand-button-start-hover: color-mix(in oklab, var(--primary) 92%, transparent);
   --login-brand-button-end-hover: color-mix(in oklab, var(--primary) 88%, transparent);
+
+  /* Settings page tokens (settings nav, fields, panels, drag-drop) */
+  --settings-border: var(--border);
+  --settings-border-strong: color-mix(in oklab, var(--border) 60%, var(--foreground) 10%);
+  --settings-surface: var(--card);
+  --settings-surface-hover: var(--accent);
+  --settings-surface-strong: color-mix(in oklab, var(--card) 92%, var(--foreground) 4%);
+  --settings-surface-overlay-soft: color-mix(in oklab, var(--muted) 60%, transparent);
 }
 
 .dark {
@@ -161,6 +169,14 @@
   --login-brand-button-end: var(--primary);
   --login-brand-button-start-hover: color-mix(in oklab, var(--primary) 92%, transparent);
   --login-brand-button-end-hover: color-mix(in oklab, var(--primary) 88%, transparent);
+
+  /* Settings page tokens (dark) */
+  --settings-border: var(--border);
+  --settings-border-strong: color-mix(in oklab, var(--border) 60%, var(--foreground) 12%);
+  --settings-surface: var(--card);
+  --settings-surface-hover: var(--accent);
+  --settings-surface-strong: color-mix(in oklab, var(--card) 88%, var(--foreground) 6%);
+  --settings-surface-overlay-soft: color-mix(in oklab, var(--muted) 60%, transparent);
 }
 
 @theme inline {
@@ -629,6 +645,24 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 4px);
+}
+.settings-nav-item-active {
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--primary) 12%, transparent),
+    0 4px 12px -4px color-mix(in oklab, var(--primary) 25%, transparent);
+}
+.settings-accent-text {
+  color: color-mix(in oklab, var(--primary) 78%, var(--foreground) 22%);
+}
+.settings-accent-badge {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+.settings-drag-active {
+  border-color: color-mix(in oklab, var(--primary) 50%, transparent);
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
 }
 
 /* ============================================================

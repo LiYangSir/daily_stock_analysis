@@ -42,7 +42,7 @@ export const SettingsCategoryNav: React.FC<SettingsCategoryNavProps> = ({
                 'w-full rounded-[1.1rem] border px-3 py-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-200',
                 isActive
                   ? 'settings-nav-item-active'
-                  : 'border-[var(--settings-border)] bg-[var(--settings-surface)] hover:border-[hsl(var(--primary)/0.32)] hover:bg-[hsl(var(--primary)/0.045)]',
+                  : 'border-[var(--settings-border)] bg-[var(--settings-surface)] hover:border-[color-mix(in_oklab,var(--primary)_32%,transparent)] hover:bg-[color-mix(in_oklab,var(--primary)_5%,transparent)]',
               )}
               onClick={() => onSelect(category.category)}
             >
@@ -58,7 +58,7 @@ export const SettingsCategoryNav: React.FC<SettingsCategoryNavProps> = ({
                 <Badge
                   variant={isActive ? 'info' : 'default'}
                   size="sm"
-                  className={isActive ? 'settings-accent-badge border-[hsl(var(--primary)/0.36)]' : 'border-[var(--settings-border)] bg-[var(--settings-surface-hover)] text-muted-text'}
+                  className={isActive ? 'settings-accent-badge border-[color-mix(in_oklab,var(--primary)_36%,transparent)]' : 'border-[var(--settings-border)] bg-[var(--settings-surface-hover)] text-muted-text'}
                 >
                   {count}
                 </Badge>
