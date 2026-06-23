@@ -8,17 +8,24 @@ FROM node:20-slim AS web-builder
 # Builder is a development context: install the full toolchain.
 # devDependencies stay in this stage; only /app/static is copied into the
 # final runtime image.
-ENV NODE_ENV=development
+ENV NODE_ENV=development \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false \
+    NODE_OPTIONS=--max-old-space-size=1536
 
 WORKDIR /app/apps/dsa-web
 
 COPY apps/dsa-web/package.json apps/dsa-web/package-lock.json ./
 
-# Defensive install: both NODE_ENV=development and --include=dev cover all
-# npm versions / host environments where one or the other might be ignored.
-RUN npm ci --include=dev \
-    && test -x node_modules/.bin/tsc \
-    && test -x node_modules/.bin/vite
+# Install all dependencies (including dev). --include=dev defends against npm
+# versions / hosts that default to production-mode install. --no-audit and
+# --no-fund drop unnecessary registry roundtrips that lengthen install time
+# and can starve memory on small VPS hosts.
+RUN npm ci --include=dev --no-audit --no-fund
+
+# Verify the toolchain made it into node_modules so any silent install failure
+# fails LOUD here instead of later in "npm run build".
+RUN test -x node_modules/.bin/tsc && test -x node_modules/.bin/vite
 
 COPY apps/dsa-web/ ./
 RUN npm run build
