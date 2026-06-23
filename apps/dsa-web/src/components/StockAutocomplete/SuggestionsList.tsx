@@ -37,7 +37,7 @@ export function SuggestionsList({
       className="z-[100] border-x border-b rounded-b-lg rounded-t-none max-h-60 overflow-auto"
       style={{
         ...style,
-        backgroundColor: 'hsl(var(--card) / 0.85)',
+        backgroundColor: 'color-mix(in oklab, var(--card) 96%, transparent)',
         borderColor: 'var(--border-accent)',
         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3), -4px 0 15px -3px rgba(0, 0, 0, 0.2), 4px 0 15px -3px rgba(0, 0, 0, 0.2)',
       }}

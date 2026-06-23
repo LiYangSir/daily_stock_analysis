@@ -24,7 +24,7 @@ export const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
 
   return (
     <div
-      className={`rounded-xl border border-[hsl(var(--color-danger-alert-border)/0.3)] bg-[hsl(var(--color-danger-alert-bg)/0.1)] px-4 py-3 text-[hsl(var(--color-danger-alert-text))] ${className}`}
+      className={`rounded-xl border border-[color-mix(in_oklab,var(--destructive)_30%,transparent)] bg-[color-mix(in_oklab,var(--destructive)_10%,transparent)] px-4 py-3 text-destructive ${className}`}
       role="alert"
     >
       <div className="flex items-start justify-between gap-3">
@@ -35,7 +35,7 @@ export const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
         {onDismiss ? (
           <button
             type="button"
-            className="shrink-0 rounded-md border border-[hsl(var(--color-danger-alert-border)/0.3)] bg-[hsl(var(--color-danger-alert-bg)/0.1)] px-2 py-1 text-[11px] text-[hsl(var(--color-danger-alert-text))] transition hover:bg-[hsl(var(--color-danger-alert-bg)/0.15)]"
+            className="shrink-0 rounded-md border border-[color-mix(in_oklab,var(--destructive)_30%,transparent)] bg-[color-mix(in_oklab,var(--destructive)_10%,transparent)] px-2 py-1 text-[11px] text-destructive transition hover:bg-[color-mix(in_oklab,var(--destructive)_15%,transparent)]"
             onClick={onDismiss}
           >
             {dismissLabel ?? t('common.close')}
@@ -44,8 +44,8 @@ export const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
       </div>
       {showDetails ? (
         <details className="mt-3 rounded-lg border border-subtle bg-surface-2 px-3 py-2">
-          <summary className="cursor-pointer text-xs text-[hsl(var(--color-danger-alert-text))] opacity-90">{t('common.details')}</summary>
-          <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] leading-5 text-[hsl(var(--color-danger-alert-text))] opacity-85">
+          <summary className="cursor-pointer text-xs text-destructive opacity-90">{t('common.details')}</summary>
+          <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] leading-5 text-destructive opacity-85">
             {error.rawMessage}
           </pre>
         </details>
@@ -53,7 +53,7 @@ export const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
       {actionLabel && onAction ? (
         <button
           type="button"
-          className="mt-3 inline-flex items-center justify-center rounded-md border border-[hsl(var(--color-danger-alert-border)/0.3)] bg-[hsl(var(--color-danger-alert-bg)/0.1)] px-3 py-1.5 text-xs font-medium text-[hsl(var(--color-danger-alert-text))] transition hover:bg-[hsl(var(--color-danger-alert-bg)/0.15)]"
+          className="mt-3 inline-flex items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--destructive)_30%,transparent)] bg-[color-mix(in_oklab,var(--destructive)_10%,transparent)] px-3 py-1.5 text-xs font-medium text-destructive transition hover:bg-[color-mix(in_oklab,var(--destructive)_15%,transparent)]"
           onClick={onAction}
         >
           {actionLabel}

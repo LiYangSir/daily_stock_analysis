@@ -10,11 +10,11 @@ interface StatusDotProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const TONE_STYLES: Record<StatusDotTone, string> = {
-  success: 'bg-success shadow-[0_0_0_3px_hsl(var(--success)/0.12)]',
-  warning: 'bg-warning shadow-[0_0_0_3px_hsl(var(--warning)/0.14)]',
-  danger: 'bg-danger shadow-[0_0_0_3px_hsl(var(--destructive)/0.12)]',
-  info: 'bg-cyan shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]',
-  neutral: 'bg-muted-text shadow-[0_0_0_3px_hsl(var(--muted-text)/0.12)]',
+  success: 'bg-success shadow-[0_0_0_3px_color-mix(in_oklab,var(--success)_12%,transparent)]',
+  warning: 'bg-warning shadow-[0_0_0_3px_color-mix(in_oklab,var(--warning)_14%,transparent)]',
+  danger: 'bg-danger shadow-[0_0_0_3px_color-mix(in_oklab,var(--destructive)_12%,transparent)]',
+  info: 'bg-cyan shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_12%,transparent)]',
+  neutral: 'bg-muted-text shadow-[0_0_0_3px_color-mix(in_oklab,var(--muted-foreground)_12%,transparent)]',
 };
 
 export const StatusDot: React.FC<StatusDotProps> = ({

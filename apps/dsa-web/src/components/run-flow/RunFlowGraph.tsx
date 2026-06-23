@@ -80,11 +80,11 @@ const TOP_PADDING = 18;
 const BOTTOM_PADDING = 30;
 
 const getEdgeStroke = (status: RunFlowStatus): string => {
-  if (status === 'failed' || status === 'timeout') return 'hsl(var(--destructive))';
-  if (status === 'fallback' || status === 'degraded' || status === 'cancel_requested') return 'hsl(var(--warning))';
-  if (status === 'success') return 'hsl(var(--success))';
-  if (status === 'running') return 'hsl(var(--primary))';
-  return 'hsl(var(--muted-text))';
+  if (status === 'failed' || status === 'timeout') return 'var(--destructive)';
+  if (status === 'fallback' || status === 'degraded' || status === 'cancel_requested') return 'var(--warning)';
+  if (status === 'success') return 'var(--success)';
+  if (status === 'running') return 'var(--primary)';
+  return 'var(--muted-foreground)';
 };
 
 const getEdgeFocusRank = (level: EdgeFocusLevel): number => {
@@ -687,7 +687,7 @@ export const RunFlowGraph: React.FC<RunFlowGraphProps> = ({
                     y={labelY}
                     textAnchor={labelAnchor}
                     className="fill-muted-text text-[10px]"
-                    style={{ paintOrder: 'stroke', stroke: 'hsl(var(--card))', strokeWidth: 4 }}
+                    style={{ paintOrder: 'stroke', stroke: 'var(--card)', strokeWidth: 4 }}
                   >
                     {compactText(displayLabel, 22)}
                   </text>
