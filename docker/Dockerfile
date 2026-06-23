@@ -8,7 +8,9 @@ FROM node:20-slim AS web-builder
 WORKDIR /app/apps/dsa-web
 
 COPY apps/dsa-web/package.json apps/dsa-web/package-lock.json ./
-RUN npm ci
+# --include=dev guarantees devDependencies (typescript, vite, etc.) are installed
+# even when the build host has NODE_ENV=production set.
+RUN npm ci --include=dev
 
 COPY apps/dsa-web/ ./
 RUN npm run build
