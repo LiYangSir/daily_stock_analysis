@@ -5,15 +5,14 @@
 
 FROM node:20-slim AS web-builder
 
-# The builder stage is explicitly a development context: it needs the full
-# toolchain (typescript, vite, ...). devDependencies stay in this stage's
-# node_modules and never reach the final runtime image.
-ENV NODE_ENV=development
-
 WORKDIR /app/apps/dsa-web
 
 COPY apps/dsa-web/package.json apps/dsa-web/package-lock.json ./
-RUN npm ci
+# Builder stage is a development context — install the full toolchain
+# (typescript, vite, ...) into this stage's node_modules. devDependencies
+# never reach the final runtime image because we only COPY /app/static
+# into stage 2.
+RUN NODE_ENV=development npm ci
 
 COPY apps/dsa-web/ ./
 RUN npm run build
