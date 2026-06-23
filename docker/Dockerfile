@@ -3,7 +3,7 @@
 # ===================================
 # 多阶段构建：前端打包 + 后端运行
 
-FROM node:20-slim AS web-builder
+FROM node:22-slim AS web-builder
 
 # Builder is a development context: install the full toolchain.
 # devDependencies stay in this stage; only /app/static is copied into the
@@ -15,13 +15,27 @@ ENV NODE_ENV=development \
 
 WORKDIR /app/apps/dsa-web
 
+ARG NPM_VERSION=11.17.0
+RUN npm install -g "npm@${NPM_VERSION}" && npm --version
+
+# Allow callers behind slow / blocked links to npmjs.org to swap in a mirror,
+# e.g. `--build-arg NPM_REGISTRY=https://registry.npmmirror.com`. Default
+# keeps the upstream registry so behavior is unchanged for everyone else.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+
 COPY apps/dsa-web/package.json apps/dsa-web/package-lock.json ./
 
 # Install all dependencies (including dev). --include=dev defends against npm
 # versions / hosts that default to production-mode install. --no-audit and
-# --no-fund drop unnecessary registry roundtrips that lengthen install time
-# and can starve memory on small VPS hosts.
-RUN npm ci --include=dev --no-audit --no-fund
+# --no-fund drop unnecessary registry roundtrips. fetch-retry / fetch-timeout
+# knobs make the install survive transient network drops on slow uplinks
+# instead of dying with "Exit handler never called!" after 8 minutes.
+RUN npm config set registry "$NPM_REGISTRY" \
+    && npm ci --include=dev --no-audit --no-fund \
+       --fetch-retries=5 \
+       --fetch-retry-mintimeout=20000 \
+       --fetch-retry-maxtimeout=120000 \
+       --fetch-timeout=600000
 
 # Verify the toolchain made it into node_modules so any silent install failure
 # fails LOUD here instead of later in "npm run build".
