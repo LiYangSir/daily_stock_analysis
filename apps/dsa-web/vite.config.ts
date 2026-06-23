@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 const packageJson = JSON.parse(
@@ -106,6 +107,63 @@ export default defineConfig({
     react({
       babel: {
         plugins: [['babel-plugin-react-compiler']],
+      },
+    }),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg'],
+      manifest: {
+        name: 'Daily Stock Analysis',
+        short_name: 'DSA',
+        description: '股票智能分析工作台 — A 股 / 港股 / 美股自选股 + AI 决策报告。',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#0a0a0a',
+        theme_color: '#0a0a0a',
+        lang: 'zh-CN',
+        icons: [
+          {
+            src: '/favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        navigateFallback: '/index.html',
+        // Don't precache the giant stocks index — served at runtime.
+        globIgnores: ['**/stocks.index.json'],
+        // Allow vendor-charts (~3 MB before gzip) into the precache.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            // Live data must always go to the network so reports stay fresh.
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'dsa-images',
+              expiration: { maxEntries: 64, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'dsa-google-fonts',
+              expiration: { maxEntries: 16, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        // Don't activate the SW in dev — it interferes with HMR.
+        enabled: false,
       },
     }),
   ],

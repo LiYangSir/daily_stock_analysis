@@ -12,6 +12,7 @@ import { UiLanguageProvider, useUiLanguage } from './contexts/UiLanguageContext'
 import { useAgentChatStore } from './stores/agentChatStore';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
+import { PwaUpdater } from './components/pwa/PwaUpdater';
 import './App.css';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -106,6 +107,7 @@ const App: React.FC = () => {
           </AuthProvider>
         </Router>
         <Toaster />
+        <PwaUpdater />
       </TooltipProvider>
     </UiLanguageProvider>
   );
