@@ -255,9 +255,8 @@ struct MarkdownReportSheet: View {
             .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 10)
             Divider()
             ScrollView {
-                Markdown(markdown)
-                    .markdownTextStyle { FontSize(15) }
-                    .padding(.horizontal, 20).padding(.vertical, 16)
+                MarkdownCards(text: markdown)
+                    .padding(.horizontal, 16).padding(.vertical, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

@@ -214,16 +214,41 @@ public struct ChatView: View {
     public init() {}
 
     public var body: some View {
-        ZStack(alignment: .top) {
+        VStack(spacing: 0) {
+            // 顶部导航（实底）
+            HStack {
+                Button { showSessions = true } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DSColor.accent)
+                        .frame(width: 36, height: 36)
+                        .background(.regularMaterial, in: Circle())
+                }
+                Spacer()
+                CapsuleTitle(vm.currentSessionId == nil ? "新对话" : "AI 对话")
+                Spacer()
+                Button { vm.startNewSession() } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DSColor.accent)
+                        .frame(width: 36, height: 36)
+                        .background(.regularMaterial, in: Circle())
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.dsGroupedBackground)
+
+            // 中间消息区（占满剩余空间）
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 6) {
-                        Color.clear.frame(height: 90).id("top")
                         ForEach(vm.messages) { msg in
                             bubble(msg).id(msg.id)
                         }
-                        Color.clear.frame(height: 180).id("bottom")
+                        Color.clear.frame(height: 8).id("bottom")
                     }
+                    .padding(.top, 8)
                     .padding(.bottom, 6)
                 }
                 .onChange(of: vm.messages.count) { _, _ in
@@ -231,41 +256,14 @@ public struct ChatView: View {
                 }
             }
 
-            // 顶部浮空栏
-            VStack {
-                HStack {
-                    Button { showSessions = true } label: {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(DSColor.accent)
-                            .frame(width: 36, height: 36)
-                            .background(.regularMaterial, in: Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
-                            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 6)
-                    }
-                    Spacer()
-                    CapsuleTitle(vm.currentSessionId == nil ? "新对话" : "AI 对话")
-                    Spacer()
-                    Button { vm.startNewSession() } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(DSColor.accent)
-                            .frame(width: 36, height: 36)
-                            .background(.regularMaterial, in: Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
-                            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 6)
-                    }
-                }
-                .padding(.horizontal, 14).padding(.top, 8)
-                Spacer()
+            // 底部控件区（实底背景）
+            VStack(spacing: 6) {
+                skillsRow
+                inputBar
             }
-
-            // 底部技能 + 输入
-            VStack {
-                Spacer()
-                skillsRow.padding(.bottom, 6)
-                inputBar.padding(.bottom, 100)
-            }
+            .padding(.top, 8)
+            .padding(.bottom, 80) // Tab Bar 空间
+            .background(Color.dsGroupedBackground)
         }
         .background(Color.dsGroupedBackground.ignoresSafeArea())
         .task { await vm.load(env: env) }
@@ -312,13 +310,7 @@ public struct ChatView: View {
                         .padding(.horizontal, 4)
                 }
                 if !msg.text.isEmpty {
-                    Markdown(msg.text)
-                        .markdownTextStyle {
-                            FontSize(14)
-                        }
-                        .padding(.horizontal, 14).padding(.vertical, 12)
-                        .background(Color.dsSecondaryGrouped, in:
-                            UnevenRoundedRectangle(cornerRadii: .init(topLeading: 18, bottomLeading: 4, bottomTrailing: 18, topTrailing: 18)))
+                    MarkdownCards(text: msg.text)
                 }
             }
             .padding(.leading, 16).padding(.trailing, 40)

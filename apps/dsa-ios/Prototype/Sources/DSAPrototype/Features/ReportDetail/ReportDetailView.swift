@@ -17,7 +17,11 @@ final class ReportDetailViewModel: ObservableObject {
             self.report = try await report
             self.bars = (try? await barsResp)?.data ?? []
         } catch {
-            errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            if let apiErr = error as? APIError {
+                errorMessage = apiErr.errorDescription
+            } else {
+                errorMessage = "\(error)"
+            }
         }
     }
 }
@@ -57,6 +61,9 @@ public struct ReportDetailView: View {
                         sentimentCard(report)
                         trendCard(report)
                         metaCard(report)
+                    } else if !vm.loading && vm.errorMessage == nil {
+                        Text("报告为空 (recordId=\(history.recordId))")
+                            .font(.caption).foregroundStyle(.orange).padding(.horizontal, 20)
                     }
 
                     Color.clear.frame(height: 100)
@@ -160,9 +167,7 @@ public struct ReportDetailView: View {
                 ActionChip(action: summary.action, label: summary.actionLabel ?? summary.operationAdvice)
             )) {
                 if let text = summary.analysisSummary, !text.isEmpty {
-                    Markdown(text)
-                        .markdownTextStyle { FontSize(14) }
-                        .fixedSize(horizontal: false, vertical: true)
+                    MarkdownCards(text: text)
                 }
                 if let advice = summary.operationAdvice, advice != summary.actionLabel {
                     HStack(spacing: 6) {
