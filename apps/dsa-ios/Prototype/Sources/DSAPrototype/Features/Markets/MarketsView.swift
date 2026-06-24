@@ -13,31 +13,35 @@ final class MarketsViewModel: ObservableObject {
         var firstError: String?
 
         struct WatchlistResp: Decodable { let stockCodes: [String]? }
-        var codes: [String] = []
-        do {
-            let resp: WatchlistResp = try await env.auth.api.send(.get("/stocks/watchlist"))
-            codes = resp.stockCodes ?? []
-        } catch {
-            firstError = "/watchlist · " + ((error as? APIError)?.errorDescription ?? error.localizedDescription)
-        }
 
+        // 并发：watchlist + history 同时发起
+        async let watchlistTask: WatchlistResp? = try? env.auth.api.send(.get("/stocks/watchlist"))
+        async let historyTask: HistoryListResponse? = try? env.auth.api.send(.get("/history", query: ["limit": "20"]))
+
+        let watchlistResp = await watchlistTask
+        let historyResp = await historyTask
+
+        let codes = watchlistResp?.stockCodes ?? []
+        self.history = historyResp?.items ?? []
+
+        // 并发拉所有 quote
         var quotes: [StockQuote] = []
-        for code in codes.prefix(20) {
-            if let q: StockQuote = try? await env.auth.api.send(.get("/stocks/\(code)/quote")) {
-                quotes.append(q)
+        await withTaskGroup(of: StockQuote?.self) { group in
+            for code in codes.prefix(20) {
+                group.addTask {
+                    try? await env.auth.api.send(.get("/stocks/\(code)/quote"))
+                }
+            }
+            for await result in group {
+                if let q = result { quotes.append(q) }
             }
         }
-        self.watchlist = quotes
+        // 保持原顺序
+        self.watchlist = codes.compactMap { code in quotes.first { $0.stockCode.lowercased() == code.lowercased() } }
 
-        // 3) 历史报告（后端返回 { total, page, limit, items: [...] }）
-        do {
-            let resp: HistoryListResponse = try await env.auth.api.send(.get("/history", query: ["limit": "20"]))
-            self.history = resp.items ?? []
-        } catch {
-            let msg = "/history · " + ((error as? APIError)?.errorDescription ?? error.localizedDescription)
-            firstError = firstError.map { "\($0)\n\(msg)" } ?? msg
+        if watchlistResp == nil && historyResp == nil {
+            firstError = "加载失败，请检查网络或下拉刷新"
         }
-
         errorMessage = firstError
     }
 }
@@ -55,6 +59,24 @@ public struct MarketsView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     CompactPageTitle("行情") {
                         Image(systemName: "ellipsis").foregroundStyle(DSColor.accent)
+                    }
+
+                    if vm.loading {
+                        WatchlistSkeleton()
+                        ContentSkeleton(lines: 3)
+                    }
+
+                    if let err = vm.errorMessage {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                            .padding(.horizontal, 20).padding(.top, 8)
+                    }
+
+                    if !vm.loading && vm.watchlist.isEmpty && vm.history.isEmpty && vm.errorMessage == nil {
+                        VStack(spacing: 8) {
+                            Image(systemName: "chart.bar.xaxis").font(.largeTitle).foregroundStyle(.secondary)
+                            Text("暂无数据，下拉刷新").font(.callout).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity).padding(.top, 40)
                     }
 
                     if !vm.watchlist.isEmpty {
@@ -82,10 +104,6 @@ public struct MarketsView: View {
                                 }
                             }
                         }
-                    }
-
-                    if let err = vm.errorMessage {
-                        Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
                     }
 
                     Color.clear.frame(height: 100)

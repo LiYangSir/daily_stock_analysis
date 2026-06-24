@@ -36,7 +36,7 @@ public struct PortfolioView: View {
                 segmentControl
                 Group {
                     switch segment {
-                    case 0: PortfolioOverviewView()
+                    case 0: ScreeningView()
                     case 1: DecisionSignalsView()
                     default: AlertsView()
                     }
@@ -49,7 +49,7 @@ public struct PortfolioView: View {
 
     private var segmentControl: some View {
         HStack(spacing: 6) {
-            segChip("总览", index: 0)
+            segChip("选股", index: 0)
             segChip("决策信号", index: 1)
             segChip("预警", index: 2)
         }

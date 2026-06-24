@@ -74,7 +74,7 @@ public struct LoginView: View {
                     } label: {
                         HStack {
                             if loading { ProgressView().tint(.white) }
-                            Text(isFirstSetup ? "设置并登录" : "登录 (\(password.count)字)")
+                            Text(isFirstSetup ? "设置并登录" : "登录")
                                 .font(.system(size: 16, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity).frame(height: 50)
@@ -196,7 +196,6 @@ public struct LoginView: View {
         await auth.updateBaseURL(url)
         do {
             try await auth.login(password: password, confirm: isFirstSetup ? confirm : nil)
-            self.error = "✓ 登录成功，正在跳转…"
         } catch {
             // 展示完整错误（含 URL / 底层原因）
             let detail: String

@@ -1,4 +1,5 @@
 import SwiftUI
+import MarkdownUI
 
 // MARK: - RunFlow Sheet
 
@@ -254,9 +255,8 @@ struct MarkdownReportSheet: View {
             .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 10)
             Divider()
             ScrollView {
-                Text(LocalizedStringKey(markdown))
-                    .font(.system(size: 15, design: .serif))
-                    .lineSpacing(4)
+                Markdown(markdown)
+                    .markdownTextStyle { FontSize(15) }
                     .padding(.horizontal, 20).padding(.vertical, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

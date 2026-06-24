@@ -56,6 +56,8 @@ public struct HistoryListResponse: Codable, Sendable {
 
 public struct HistoryItem: Codable, Sendable, Identifiable {
     public var id: String { "\(dbId ?? 0)-\(queryId ?? stockCode)" }
+    /// 用于 API 路径的记录 ID（优先 dbId，fallback queryId）
+    public var recordId: String { dbId.map { String($0) } ?? queryId ?? "" }
     public let dbId: Int?
     public let queryId: String?
     public let stockCode: String
@@ -88,7 +90,7 @@ public struct HistoryItem: Codable, Sendable, Identifiable {
 // MARK: - Analysis Report (detail)
 
 public struct ReportMeta: Codable, Sendable {
-    public let id: String?
+    public let id: Int?
     public let queryId: String?
     public let stockCode: String?
     public let stockName: String?
@@ -98,6 +100,16 @@ public struct ReportMeta: Codable, Sendable {
     public let currentPrice: Double?
     public let changePct: Double?
     public let modelUsed: String?
+    public let marketPhaseSummary: MarketPhaseSummary?
+}
+
+public struct MarketPhaseSummary: Codable, Sendable {
+    public let market: String?
+    public let phase: String?
+    public let sessionDate: String?
+    public let isTradingDay: Bool?
+    public let isMarketOpenNow: Bool?
+    public let triggerSource: String?
 }
 
 public struct ReportSummary: Codable, Sendable {
