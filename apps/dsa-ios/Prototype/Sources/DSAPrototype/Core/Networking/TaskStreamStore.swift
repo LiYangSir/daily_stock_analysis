@@ -14,12 +14,8 @@ public final class TaskStreamStore: ObservableObject {
 
     public func start(env: AppEnvironment) {
         stop()
-        if env.useMockData {
-            tasks = MockData.tasks
-            startMockTicker()
-        } else {
             startSSE(env: env)
-        }
+        
     }
 
     public func stop() {
@@ -37,7 +33,7 @@ public final class TaskStreamStore: ObservableObject {
     }
 
     public var activeTasks: [TaskInfo] {
-        tasks.filter { ["pending", "processing"].contains($0.status) }
+        tasks.filter { ["pending", "processing"].contains($0.status ?? "") }
     }
 
     // MARK: - SSE
@@ -83,7 +79,7 @@ public final class TaskStreamStore: ObservableObject {
                     self.tasks = self.tasks.map { t in
                         guard t.status == "processing", let p = t.progress, p < 100 else {
                             if t.status == "pending" {
-                                return TaskInfo(id: t.id, stockCode: t.stockCode, stockName: t.stockName,
+                                return TaskInfo(taskId: t.taskId, stockCode: t.stockCode, stockName: t.stockName,
                                                 status: "processing", progress: 8, message: "拉取实时行情",
                                                 createdAt: t.createdAt, analysisPhase: t.analysisPhase)
                             }
@@ -99,7 +95,7 @@ public final class TaskStreamStore: ObservableObject {
                         default: msg = "生成报告"
                         }
                         let status = next >= 100 ? "completed" : "processing"
-                        return TaskInfo(id: t.id, stockCode: t.stockCode, stockName: t.stockName,
+                        return TaskInfo(taskId: t.taskId, stockCode: t.stockCode, stockName: t.stockName,
                                         status: status, progress: next, message: msg,
                                         createdAt: t.createdAt, analysisPhase: t.analysisPhase)
                     }

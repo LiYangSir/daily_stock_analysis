@@ -9,14 +9,20 @@ public struct ProfileView: View {
     public var body: some View {
         NavigationStack {
             List {
+                Section {
+                    CompactPageTitle("我的")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
                 Section("账户") {
                     HStack {
-                        Image(systemName: env.useMockData ? "person.circle.dashed" : "person.crop.circle.fill")
+                        Image(systemName: "person.crop.circle.fill")
                             .foregroundStyle(DSColor.accent)
-                        Text(env.useMockData ? "Mock 数据模式" : (auth.status.loggedIn ? "已登录" : "未登录"))
+                        Text((auth.status.loggedIn == true ? "已登录" : "未登录"))
                         Spacer()
-                        if !env.useMockData && auth.status.loggedIn {
-                            Button("退出") { Task { await auth.logout(); env.useMockData = true } }
+                        if auth.status.loggedIn == true {
+                            Button("退出") { Task { await auth.logout();  } }
                                 .foregroundStyle(.red)
                         }
                     }
@@ -33,7 +39,6 @@ public struct ProfileView: View {
                         field
                         #endif
                     }
-                    Toggle("使用 Mock 数据", isOn: $env.useMockData)
                 }
 
                 Section("外观") {
@@ -81,11 +86,9 @@ public struct ProfileView: View {
 
                 Section { Color.clear.frame(height: 90).listRowBackground(Color.clear) }
             }
-            #if os(iOS)
-            .listStyle(.insetGrouped)
-            #endif
+            .dsListStyle()
             .scrollContentBackground(.hidden)
-            .navigationTitle("我的")
+            .hideNavBar()
         }
     }
 }

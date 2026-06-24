@@ -17,7 +17,7 @@ public struct SSEClient {
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
                     headers.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
 
-                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                    let (bytes, response) = try await TrustAllSession.shared.bytes(for: request)
                     if let http = response as? HTTPURLResponse, http.statusCode == 401 {
                         continuation.finish(throwing: APIError.unauthorized)
                         return

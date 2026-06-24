@@ -30,7 +30,7 @@ struct RunFlowSheet: View {
             } else {
                 listView
             }
-            if let nodeId = selected, let node = flow?.nodes.first(where: { $0.id == nodeId }) {
+            if let nodeId = selected, let node = flow?.nodes?.first(where: { $0.id == nodeId }) {
                 ModuleCard("选中节点：\(node.label)") {
                     Text("状态：\(node.status) · \(durationLabel(node.durationMs))")
                         .font(.callout)
@@ -44,11 +44,8 @@ struct RunFlowSheet: View {
         .padding(20)
         .presentationBackground(.regularMaterial)
         .task {
-            if env.useMockData {
-                flow = MockData.runFlow
-            } else {
                 flow = try? await env.auth.api.send(.get("/history/\(recordId)/flow"))
-            }
+            
         }
     }
 
@@ -65,7 +62,7 @@ struct RunFlowSheet: View {
     @ViewBuilder
     private var graphView: some View {
         if let flow {
-            FlowGraphCanvas(nodes: flow.nodes, edges: flow.edges, selected: $selected)
+            FlowGraphCanvas(nodes: flow.nodes ?? [], edges: flow.edges ?? [], selected: $selected)
         } else {
             ProgressView()
         }
@@ -76,12 +73,12 @@ struct RunFlowSheet: View {
         if let flow {
             ScrollView {
                 VStack(spacing: 0) {
-                    ForEach(flow.nodes) { node in
+                    ForEach(flow.nodes ?? []) { node in
                         Button { selected = node.id } label: {
                             HStack {
-                                Circle().fill(nodeColor(node.status)).frame(width: 8, height: 8)
+                                Circle().fill(nodeColor(node.status ?? "")).frame(width: 8, height: 8)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(node.label).font(.system(size: 14, weight: .medium))
+                                    Text(node.label ?? "").font(.system(size: 14, weight: .medium))
                                     if let detail = node.detail {
                                         Text(detail).font(.caption2).foregroundStyle(.secondary)
                                     }
@@ -172,7 +169,7 @@ struct FlowGraphCanvas: View {
             }
         }()
         return VStack(spacing: 1) {
-            Text(node.label).font(.caption2.weight(.semibold))
+            Text(node.label ?? "").font(.caption2.weight(.semibold))
             if let d = node.durationMs {
                 Text(d >= 1000 ? String(format: "%.1fs", Double(d)/1000) : "\(d)ms")
                     .font(.system(size: 9)).foregroundStyle(color)
@@ -266,14 +263,11 @@ struct MarkdownReportSheet: View {
         }
         .presentationBackground(.regularMaterial)
         .task {
-            if env.useMockData {
-                markdown = MockData.markdownReport
-            } else {
                 struct Wrap: Decodable { let content: String? }
                 if let w: Wrap = try? await env.auth.api.send(.get("/history/\(recordId)/markdown")) {
                     markdown = w.content ?? ""
                 }
-            }
+            
         }
     }
 }
@@ -378,20 +372,8 @@ struct HistoryTrendSheet: View {
     }
 
     private func load() async {
-        if env.useMockData {
-            items = (0..<min(range / 2, 14)).map { i in
-                HistoryItem(id: "ht-\(i)", queryId: nil,
-                            stockCode: stockCode, stockName: "贵州茅台",
-                            reportType: "full", trendPrediction: nil,
-                            analysisSummary: nil, sentimentScore: nil,
-                            operationAdvice: nil, action: .buy, actionLabel: "买入",
-                            currentPrice: 1500 + Double.random(in: 0...200),
-                            changePct: Double.random(in: -2...3),
-                            modelUsed: "gpt-4o", createdAt: "06-\(String(format: "%02d", 23 - i))")
-            }
-            return
-        }
-        items = (try? await env.auth.api.send(.get("/history",
-            query: ["stock_code": stockCode, "days": String(range), "limit": "50"]))) ?? []
+        let resp: HistoryListResponse? = try? await env.auth.api.send(.get("/history",
+            query: ["stock_code": stockCode, "limit": "50"]))
+        items = resp?.items ?? []
     }
 }

@@ -7,20 +7,29 @@ public struct RootView: View {
     public init() {}
 
     public var body: some View {
+        RootContent()
+            .environmentObject(env)
+            .environmentObject(env.auth)
+            .environmentObject(taskStream)
+    }
+}
+
+/// 独立 View 直接观察 AuthService 的 @Published status 变化
+private struct RootContent: View {
+    @EnvironmentObject var env: AppEnvironment
+    @EnvironmentObject var auth: AuthService
+    @EnvironmentObject var taskStream: TaskStreamStore
+
+    var body: some View {
         Group {
-            if env.useMockData || env.auth.status.loggedIn {
+            if auth.status.loggedIn == true {
                 MainTabView()
             } else {
                 LoginView()
             }
         }
-        .environmentObject(env)
-        .environmentObject(env.auth)
-        .environmentObject(taskStream)
         .task {
-            if !env.useMockData {
-                await env.auth.refreshStatus()
-            }
+            await auth.refreshStatus()
         }
         .sheet(item: $env.presentedReport) { item in
             ReportDetailView(history: item)
@@ -45,6 +54,9 @@ struct MainTabView: View {
             currentScreen
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             CapsuleTabBar(selection: $env.selectedTab, items: items)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 6)
+                .ignoresSafeArea(.container, edges: .bottom)
         }
         .ignoresSafeArea(.keyboard)
     }

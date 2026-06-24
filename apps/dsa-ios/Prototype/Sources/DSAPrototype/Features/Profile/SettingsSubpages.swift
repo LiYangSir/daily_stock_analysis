@@ -8,7 +8,6 @@ final class LLMChannelsViewModel: ObservableObject {
     @Published var loading = false
 
     func load(env: AppEnvironment) async {
-        if env.useMockData { channels = MockData.llmChannels; return }
         // 真实接入：从 /system/config 读取 channels 字段
     }
 }
@@ -25,24 +24,24 @@ public struct LLMChannelsView: View {
                 ForEach(vm.channels) { ch in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(ch.name).font(.system(size: 15, weight: .medium))
-                            Text("\(ch.models.joined(separator: ", "))\(ch.models.isEmpty ? "（无模型）" : "")")
+                            Text(ch.name ?? "").font(.system(size: 15, weight: .medium))
+                            Text("\((ch.models ?? []).joined(separator: ", "))\((ch.models ?? []).isEmpty ? "（无模型）" : "")")
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer()
-                        statusTag(ch.status, primary: ch.isPrimary)
+                        statusTag(ch.status ?? "unknown", primary: ch.isPrimary ?? false)
                     }
                 }
             }
             Section("当前编辑：\(vm.channels.first?.name ?? "—")") {
                 if let ch = vm.channels.first {
-                    LabeledContent("通道名称", value: ch.name)
-                    LabeledContent("协议", value: ch.provider)
-                    LabeledContent("Base URL", value: ch.baseURL)
-                    LabeledContent("API Key", value: ch.apiKeyMasked)
+                    LabeledContent("通道名称", value: ch.name ?? "")
+                    LabeledContent("协议", value: ch.provider ?? "")
+                    LabeledContent("Base URL", value: ch.baseURL ?? "")
+                    LabeledContent("API Key", value: ch.apiKeyMasked ?? "")
                     HStack {
                         Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(.blue)
-                        Text("自动发现模型"); Spacer(); Text("\(ch.models.count) 个 ›").foregroundStyle(.secondary).font(.subheadline)
+                        Text("自动发现模型"); Spacer(); Text("\((ch.models ?? []).count) 个 ›").foregroundStyle(.secondary).font(.subheadline)
                     }
                     HStack {
                         Image(systemName: "play.fill").foregroundStyle(.green)
@@ -57,15 +56,11 @@ public struct LLMChannelsView: View {
                 LabeledContent("Temperature", value: "0.7")
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .dsListStyle()
         .scrollContentBackground(.hidden)
         .background(Color.dsGroupedBackground)
         .navigationTitle("LLM 通道")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 
@@ -96,15 +91,9 @@ final class NotificationsViewModel: ObservableObject {
     @Published var testResult: String?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData { channels = MockData.notificationChannels }
     }
 
     func sendTest(env: AppEnvironment, channel: NotificationChannel) async {
-        if env.useMockData {
-            try? await Task.sleep(nanoseconds: 600_000_000)
-            testResult = "✓ \(channel.name) · 412ms"
-            return
-        }
         // 真实接入：POST /system/config/notification/test-channel
     }
 }
@@ -121,11 +110,11 @@ public struct NotificationChannelsView: View {
                 ForEach(vm.channels) { ch in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(ch.name).font(.system(size: 15, weight: .medium))
-                            Text(ch.target ?? ch.kind).font(.caption).foregroundStyle(.secondary)
+                            Text(ch.name ?? "").font(.system(size: 15, weight: .medium))
+                            Text(ch.target ?? ch.kind ?? "").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        statusTag(ch.status)
+                        statusTag(ch.status ?? "unknown")
                         Button("测试") { Task { await vm.sendTest(env: env, channel: ch) } }
                             .font(.caption.weight(.medium))
                     }
@@ -143,15 +132,11 @@ public struct NotificationChannelsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .dsListStyle()
         .scrollContentBackground(.hidden)
         .background(Color.dsGroupedBackground)
         .navigationTitle("通知通道")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 
@@ -180,16 +165,11 @@ final class SchedulerViewModel: ObservableObject {
     @Published var running = false
 
     func load(env: AppEnvironment) async {
-        if env.useMockData { status = MockData.schedulerStatus; return }
         // 真实接入：GET /system/scheduler/status
     }
 
     func runNow(env: AppEnvironment) async {
         running = true; defer { running = false }
-        if env.useMockData {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            return
-        }
         try? await env.auth.api.sendVoid(.init(path: "/system/scheduler/run-now", method: .POST))
     }
 }
@@ -204,19 +184,19 @@ public struct SchedulerView: View {
         List {
             if let s = vm.status {
                 Section("运行状态") {
-                    Toggle("启用调度器", isOn: Binding(get: { s.enabled }, set: { _ in }))
+                    Toggle("启用调度器", isOn: .constant(s.enabled ?? false))
                     LabeledContent("下次执行", value: s.nextRun ?? "—")
                     LabeledContent("上次执行", value: s.lastRun ?? "—")
                 }
-                Section("定时任务 · \(s.times.count)") {
-                    ForEach(s.times) { t in
+                Section("定时任务 · \(((s.times ?? []).count))") {
+                    ForEach(s.times ?? []) { t in
                         HStack {
-                            Text(t.time).font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit().frame(width: 60, alignment: .leading)
+                            Text(t.time ?? "").font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit().frame(width: 60, alignment: .leading)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(t.scope).font(.caption).foregroundStyle(.secondary)
+                                Text(t.scope ?? "").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Toggle("", isOn: Binding(get: { t.enabled }, set: { _ in })).labelsHidden()
+                            Toggle("", isOn: .constant(t.enabled ?? false)).labelsHidden()
                         }
                     }
                 }
@@ -232,15 +212,11 @@ public struct SchedulerView: View {
                 }
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .dsListStyle()
         .scrollContentBackground(.hidden)
         .background(Color.dsGroupedBackground)
         .navigationTitle("定时调度")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 }
@@ -256,8 +232,7 @@ final class AuthBackupViewModel: ObservableObject {
     @Published var preview: EnvBackupPreview?
 
     func load(env: AppEnvironment) async {
-        authEnabled = env.auth.status.authEnabled
-        if env.useMockData { preview = MockData.envBackupPreview }
+        authEnabled = env.auth.status.authEnabled ?? false
     }
 }
 
@@ -291,27 +266,23 @@ public struct AuthBackupView: View {
                     HStack {
                         Text("新增").font(.caption).foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(p.added.count)").bold()
+                        Text("(p.added?.count ?? 0)").bold()
                         Text("修改").font(.caption).foregroundStyle(.secondary).padding(.leading, 12)
-                        Text("\(p.modified.count)").bold()
+                        Text("(p.modified?.count ?? 0)").bold()
                         Text("删除").font(.caption).foregroundStyle(.secondary).padding(.leading, 12)
-                        Text("\(p.removed.count)").bold()
+                        Text("\(p.removed?.count ?? 0)").bold()
                     }
-                    ForEach(p.added, id: \.self) { Text("+ \($0)").font(.caption.monospaced()).foregroundStyle(.green) }
-                    ForEach(p.modified, id: \.self) { Text("± \($0)").font(.caption.monospaced()).foregroundStyle(.orange) }
-                    ForEach(p.removed, id: \.self) { Text("− \($0)").font(.caption.monospaced()).foregroundStyle(.red) }
+                    ForEach(p.added ?? [], id: \.self) { Text("+ \($0)").font(.caption.monospaced()).foregroundStyle(.green) }
+                    ForEach(p.modified ?? [], id: \.self) { item in Text("± \(item)").font(.caption.monospaced()).foregroundStyle(.orange) }
+                    ForEach(p.removed ?? [], id: \.self) { item in Text("− \(item)").font(.caption.monospaced()).foregroundStyle(.red) }
                 }
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .dsListStyle()
         .scrollContentBackground(.hidden)
         .background(Color.dsGroupedBackground)
         .navigationTitle("认证 · 配置备份")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 }

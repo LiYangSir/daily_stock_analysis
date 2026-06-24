@@ -15,12 +15,10 @@ final class AnalysisSubmitViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData {
-            skills = MockData.skills
-            return
-        }
         do {
-            self.skills = try await env.auth.api.send(.get("/agent/skills"))
+            struct SkillsResp: Decodable { let skills: [AgentSkill]? }
+            let resp: SkillsResp = try await env.auth.api.send(.get("/agent/skills"))
+            self.skills = resp.skills ?? []
         } catch {
             errorMessage = (error as? APIError)?.errorDescription
         }
@@ -41,19 +39,6 @@ final class AnalysisSubmitViewModel: ObservableObject {
         guard !stockInputs.isEmpty else { return }
         submitting = true
         defer { submitting = false }
-
-        if env.useMockData {
-            for code in stockInputs {
-                taskStream.upsert(TaskInfo(id: "t-\(UUID().uuidString.prefix(6))",
-                                           stockCode: code, stockName: code,
-                                           status: "pending", progress: 0,
-                                           message: "排队中",
-                                           createdAt: "刚刚",
-                                           analysisPhase: analysisPhase))
-            }
-            stockInputs.removeAll()
-            return
-        }
 
         struct Body: Encodable {
             let stockCodes: [String]
@@ -92,6 +77,7 @@ public struct AnalysisView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    CompactPageTitle("分析")
                     segmentControl
                     if segment == 0 {
                         submitForm
@@ -103,10 +89,9 @@ public struct AnalysisView: View {
                     activeTasksSection
                     Color.clear.frame(height: 100)
                 }
-                .padding(.top, 4)
             }
             .background(Color.dsGroupedBackground)
-            .navigationTitle("分析")
+            .hideNavBar()
             .task {
                 await vm.load(env: env)
                 taskStream.start(env: env)
@@ -170,20 +155,20 @@ public struct AnalysisView: View {
             FlowLayout(spacing: 6) {
                 ForEach(vm.skills) { skill in
                     Button {
-                        if vm.selectedSkills.contains(skill.key) {
-                            vm.selectedSkills.remove(skill.key)
+                        if vm.selectedSkills.contains(skill.key ?? "") {
+                            vm.selectedSkills.remove(skill.key ?? "")
                         } else if vm.selectedSkills.count < 3 {
-                            vm.selectedSkills.insert(skill.key)
+                            vm.selectedSkills.insert(skill.key ?? "")
                         }
                     } label: {
                         Text("\(skill.icon ?? "") \(skill.name)")
                             .font(.caption.weight(.medium))
                             .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(vm.selectedSkills.contains(skill.key)
+                            .background(vm.selectedSkills.contains(skill.key ?? "")
                                         ? DSColor.accent.opacity(0.16)
                                         : Color.gray.opacity(0.12),
                                         in: RoundedRectangle(cornerRadius: 6))
-                            .foregroundStyle(vm.selectedSkills.contains(skill.key) ? DSColor.accent : .secondary)
+                            .foregroundStyle(vm.selectedSkills.contains(skill.key ?? "") ? DSColor.accent : .secondary)
                     }.buttonStyle(.plain)
                 }
             }
@@ -226,15 +211,8 @@ public struct AnalysisView: View {
                 .font(.callout).foregroundStyle(.secondary).lineSpacing(2)
             Button {
                 Task {
-                    if env.useMockData {
-                        taskStream.upsert(TaskInfo(id: "mr-\(UUID().uuidString.prefix(6))",
-                                                   stockCode: "MARKET", stockName: "大盘点评",
-                                                   status: "pending", progress: 0,
-                                                   message: "排队中", createdAt: "刚刚",
-                                                   analysisPhase: "postmarket"))
-                    } else {
                         try? await env.auth.api.sendVoid(.init(path: "/analysis/market-review", method: .POST))
-                    }
+                    
                 }
             } label: {
                 Text("触发大盘点评")

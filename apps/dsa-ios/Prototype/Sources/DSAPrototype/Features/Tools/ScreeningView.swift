@@ -12,23 +12,12 @@ final class ScreeningViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData {
-            hotspots = MockData.hotspots
-            strategies = MockData.strategies
-            candidates = MockData.candidates
-            return
-        }
-        self.hotspots = (try? await env.auth.api.send(.get("/alphasift/hotspots"))) ?? []
-        self.strategies = (try? await env.auth.api.send(.get("/alphasift/strategies"))) ?? []
+        self.hotspots = [] // TODO: parse dynamic hotspots response
+        struct StratResp: Decodable { let strategies: [ScreeningStrategy]? }; self.strategies = (try? await env.auth.api.send(.get("/alphasift/strategies")) as StratResp?)?.strategies ?? []
     }
 
     func runScreen(env: AppEnvironment) async {
         loading = true; defer { loading = false }
-        if env.useMockData {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            candidates = MockData.candidates
-            return
-        }
         // 真实接入应轮询 /alphasift/screen/tasks/{id}，原型简化
     }
 }
@@ -66,9 +55,7 @@ public struct ScreeningView: View {
         }
         .background(Color.dsGroupedBackground)
         .navigationTitle("选股 (AlphaSift)")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 
@@ -84,12 +71,12 @@ public struct ScreeningView: View {
     }
 
     private func hotspotCell(_ h: Hotspot) -> some View {
-        let up = h.changePct >= 0
+        let up = h.changePct ?? 0 >= 0 ?? 0
         let color: Color = up ? .red : .green
         return VStack(alignment: .leading, spacing: 4) {
             Text(h.topic).font(.system(size: 13, weight: .semibold))
-            sparkline(values: h.trend, color: color).frame(height: 22)
-            Text("\(h.count) 只 · \((up ? "↑ +" : "↓ ") + String(format: "%.1f%%", abs(h.changePct)))")
+            sparkline(values: h.trend ?? [], color: color).frame(height: 22)
+            Text("\(h.count) 只 · \((up ? "↑ +" : "↓ ") + String(format: "%.1f%%", abs(h.changePct ?? 0)))")
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
@@ -151,8 +138,8 @@ public struct ScreeningView: View {
                 ForEach(vm.candidates) { c in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(c.stockName).font(.system(size: 15, weight: .medium))
-                            Text("\(c.stockCode)\(c.theme.map { " · \($0)" } ?? "") · 评分 \(Int(c.score))")
+                            Text(c.stockName ?? "").font(.system(size: 15, weight: .medium))
+                            Text("\(c.stockCode)\(c.theme.map { " · \($0)" } ?? "") · 评分 \(Int(c.score ?? 0))")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()

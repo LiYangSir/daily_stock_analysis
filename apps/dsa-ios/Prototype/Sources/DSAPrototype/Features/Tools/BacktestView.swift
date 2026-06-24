@@ -12,23 +12,12 @@ final class BacktestViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData {
-            performance = MockData.backtestPerformance
-            results = MockData.backtestResults
-            return
-        }
         self.performance = try? await env.auth.api.send(.get("/backtest/performance"))
-        self.results = (try? await env.auth.api.send(.get("/backtest/results", query: ["limit": "30"]))) ?? []
+        struct BtResp: Decodable { let items: [BacktestResult]? }; self.results = (try? await env.auth.api.send(.get("/backtest/results", query: ["limit": "30"])) as BtResp?)?.items ?? []
     }
 
     func run(env: AppEnvironment) async {
         loading = true; defer { loading = false }
-        if env.useMockData {
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            performance = MockData.backtestPerformance
-            results = MockData.backtestResults
-            return
-        }
         // 真实接入应 POST /backtest/run，原型简化
     }
 }
@@ -46,7 +35,7 @@ public struct BacktestView: View {
                 runButton
                 if let perf = vm.performance {
                     performanceGrid(perf)
-                    phaseDistributionCard(perf.phaseDistribution)
+                    phaseDistributionCard(perf.phaseDistribution ?? [])
                 }
                 resultsCard
                 Color.clear.frame(height: 80)
@@ -55,9 +44,7 @@ public struct BacktestView: View {
         }
         .background(Color.dsGroupedBackground)
         .navigationTitle("回测")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 
@@ -88,10 +75,10 @@ public struct BacktestView: View {
     private func performanceGrid(_ perf: BacktestPerformance) -> some View {
         let columns = [GridItem(.flexible()), GridItem(.flexible())]
         return LazyVGrid(columns: columns, spacing: 10) {
-            statCard("方向准确率", String(format: "%.1f%%", perf.directionalAccuracy * 100), color: .green)
-            statCard("胜率", String(format: "%.1f%%", perf.winRate * 100), color: .primary)
-            statCard("平均收益", String(format: "%+.2f%%", perf.avgReturn * 100), color: perf.avgReturn >= 0 ? .red : .green)
-            statCard("止损率", String(format: "%.1f%%", perf.stopLossRate * 100), color: .red)
+            statCard("平均收益", String(format: "%+.2f%%", (perf.avgReturn ?? 0) * 100), color: (perf.avgReturn ?? 0) >= 0 ? .red : .green)
+            statCard("胜率", String(format: "%.1f%%", (perf.winRate ?? 0) * 100), color: .primary)
+            statCard("平均收益", String(format: "%+.2f%%", (perf.avgReturn ?? 0) * 100), color: (perf.avgReturn ?? 0) >= 0 ? .red : .green)
+            statCard("止损率", String(format: "%.1f%%", (perf.stopLossRate ?? 0) * 100), color: .red)
         }
         .padding(.horizontal, 16)
     }
@@ -107,7 +94,7 @@ public struct BacktestView: View {
     }
 
     private func phaseDistributionCard(_ items: [PhaseDistribution]) -> some View {
-        let max = max(items.map(\.count).max() ?? 1, 1)
+        let maxCount = (items.compactMap { $0.count }.max() ?? 1)
         return ModuleCard("阶段分布") {
             VStack(spacing: 6) {
                 ForEach(items) { it in
@@ -116,7 +103,7 @@ public struct BacktestView: View {
                         GeometryReader { geo in
                             Capsule().fill(Color.gray.opacity(0.16))
                             Capsule().fill(color(for: it.phase))
-                                .frame(width: geo.size.width * CGFloat(it.count) / CGFloat(max))
+                                .frame(width: geo.size.width * CGFloat(it.count ?? 0) / CGFloat(maxCount))
                         }
                         .frame(height: 8)
                         Text("\(it.count) 次").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 60, alignment: .trailing)
@@ -142,12 +129,12 @@ public struct BacktestView: View {
                 ForEach(vm.results) { r in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(r.stockName ?? r.stockCode).font(.system(size: 15, weight: .medium))
+                            Text(r.stockName ?? r.stockCode ?? "").font(.system(size: 15, weight: .medium))
                             Text("\(r.date) · \(r.phase ?? "—") · 预测 \(r.predicted)\(r.actual.map { " · 实际 \($0)" } ?? "")")
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer()
-                        outcomeBadge(r.outcome)
+                        outcomeBadge(r.outcome ?? "—")
                     }
                     .padding(.vertical, 8)
                     if r.id != vm.results.last?.id { Divider() }

@@ -12,19 +12,10 @@ final class ChatViewModel: ObservableObject {
     private var streamTask: Task<Void, Never>?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData {
-            skills = MockData.skills
-            if messages.isEmpty {
-                messages = [
-                    ChatMessage(role: .assistant,
-                                text: "你好，我是 DSA 助手。可以追问任何持仓或大盘问题。",
-                                thinking: [], tools: [])
-                ]
-            }
-            return
-        }
         do {
-            self.skills = try await env.auth.api.send(.get("/agent/skills"))
+            struct SkillsResp: Decodable { let skills: [AgentSkill]? }
+            let resp: SkillsResp = try await env.auth.api.send(.get("/agent/skills"))
+            self.skills = resp.skills ?? []
         } catch {
             errorMessage = (error as? APIError)?.errorDescription
         }
@@ -36,12 +27,8 @@ final class ChatViewModel: ObservableObject {
         let userMessage = ChatMessage(role: .user, text: text)
         messages.append(userMessage)
         draft = ""
-
-        if env.useMockData {
-            mockStream()
-        } else {
             realStream(env: env, prompt: text)
-        }
+        
     }
 
     func cancel() {
@@ -116,7 +103,7 @@ final class ChatViewModel: ObservableObject {
 
         streamTask = Task { [weak self] in
             do {
-                let (bytes, _) = try await URLSession.shared.bytes(for: request)
+                let (bytes, _) = try await TrustAllSession.shared.bytes(for: request)
                 var event = "message"
                 var data = ""
                 for try await line in bytes.lines {
@@ -267,10 +254,10 @@ public struct ChatView: View {
             HStack(spacing: 6) {
                 ForEach(vm.skills) { s in
                     Button {
-                        if vm.selectedSkills.contains(s.key) { vm.selectedSkills.remove(s.key) }
-                        else if vm.selectedSkills.count < 3 { vm.selectedSkills.insert(s.key) }
+                        if vm.selectedSkills.contains(s.key ?? "") { vm.selectedSkills.remove(s.key ?? "") }
+                        else if vm.selectedSkills.count < 3 { vm.selectedSkills.insert(s.key ?? "") }
                     } label: {
-                        let active = vm.selectedSkills.contains(s.key)
+                        let active = vm.selectedSkills.contains(s.key ?? "")
                         Text("\(s.icon ?? "") \(s.name)")
                             .font(.caption.weight(.medium))
                             .padding(.horizontal, 10).padding(.vertical, 5)

@@ -14,8 +14,27 @@ public enum APIError: LocalizedError, Sendable {
         case .unauthorized: return "未登录或会话已过期"
         case .rateLimited: return "请求过于频繁，请稍后再试"
         case .server(_, let message): return message
-        case .decoding: return "返回数据解析失败"
+        case .decoding(let error):
+            if let de = error as? DecodingError {
+                return "解析失败：\(de.shortDescription)"
+            }
+            return "返回数据解析失败"
         case .transport(let error): return error.localizedDescription
+        }
+    }
+}
+
+private extension DecodingError {
+    var shortDescription: String {
+        switch self {
+        case .typeMismatch(_, let ctx),
+             .valueNotFound(_, let ctx),
+             .keyNotFound(_, let ctx),
+             .dataCorrupted(let ctx):
+            let path = ctx.codingPath.map(\.stringValue).joined(separator: ".")
+            return "\(path.isEmpty ? "<root>" : path) · \(ctx.debugDescription)"
+        @unknown default:
+            return "\(self)"
         }
     }
 }

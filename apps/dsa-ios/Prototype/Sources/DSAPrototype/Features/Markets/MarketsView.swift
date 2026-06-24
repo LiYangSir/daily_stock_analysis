@@ -10,73 +10,115 @@ final class MarketsViewModel: ObservableObject {
     func load(env: AppEnvironment) async {
         loading = true
         defer { loading = false }
-        if env.useMockData {
-            watchlist = MockData.watchlist
-            history = MockData.history
-            return
-        }
+        var firstError: String?
+
+        struct WatchlistResp: Decodable { let stockCodes: [String]? }
+        var codes: [String] = []
         do {
-            // 简单串行加载；正式版应并发。
-            let watchlistRaw: [WatchlistItem] = try await env.auth.api.send(.get("/stocks/watchlist"))
-            var quotes: [StockQuote] = []
-            for w in watchlistRaw.prefix(20) {
-                if let q: StockQuote = try? await env.auth.api.send(.get("/stocks/\(w.stockCode)/quote")) {
-                    quotes.append(q)
-                }
-            }
-            self.watchlist = quotes
-            self.history = try await env.auth.api.send(.get("/history", query: ["limit": "20"]))
+            let resp: WatchlistResp = try await env.auth.api.send(.get("/stocks/watchlist"))
+            codes = resp.stockCodes ?? []
         } catch {
-            errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            firstError = "/watchlist · " + ((error as? APIError)?.errorDescription ?? error.localizedDescription)
         }
+
+        var quotes: [StockQuote] = []
+        for code in codes.prefix(20) {
+            if let q: StockQuote = try? await env.auth.api.send(.get("/stocks/\(code)/quote")) {
+                quotes.append(q)
+            }
+        }
+        self.watchlist = quotes
+
+        // 3) 历史报告（后端返回 { total, page, limit, items: [...] }）
+        do {
+            let resp: HistoryListResponse = try await env.auth.api.send(.get("/history", query: ["limit": "20"]))
+            self.history = resp.items ?? []
+        } catch {
+            let msg = "/history · " + ((error as? APIError)?.errorDescription ?? error.localizedDescription)
+            firstError = firstError.map { "\($0)\n\(msg)" } ?? msg
+        }
+
+        errorMessage = firstError
     }
 }
 
 public struct MarketsView: View {
     @EnvironmentObject var env: AppEnvironment
+    @EnvironmentObject var auth: AuthService
     @StateObject private var vm = MarketsViewModel()
 
     public init() {}
 
     public var body: some View {
         NavigationStack {
-            List {
-                if !vm.watchlist.isEmpty {
-                    Section("关注") {
-                        ForEach(vm.watchlist) { quote in
-                            watchlistRow(quote)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    CompactPageTitle("行情") {
+                        Image(systemName: "ellipsis").foregroundStyle(DSColor.accent)
+                    }
+
+                    if !vm.watchlist.isEmpty {
+                        sectionHeader("关注")
+                        groupedCard {
+                            ForEach(vm.watchlist) { quote in
+                                watchlistRow(quote)
+                                if quote.id != vm.watchlist.last?.id {
+                                    Divider().padding(.leading, 16)
+                                }
+                            }
                         }
                     }
-                }
-                if !vm.history.isEmpty {
-                    Section("历史报告") {
-                        ForEach(vm.history) { item in
-                            historyRow(item)
-                                .contentShape(Rectangle())
-                                .onTapGesture { env.presentedReport = item }
+
+                    if !vm.history.isEmpty {
+                        sectionHeader("历史报告")
+                        groupedCard {
+                            ForEach(vm.history) { item in
+                                Button { env.presentedReport = item } label: {
+                                    historyRow(item)
+                                }
+                                .buttonStyle(.plain)
+                                if item.id != vm.history.last?.id {
+                                    Divider().padding(.leading, 16)
+                                }
+                            }
                         }
                     }
+
+                    if let err = vm.errorMessage {
+                        Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
+                    }
+
+                    Color.clear.frame(height: 100)
                 }
-                if let err = vm.errorMessage {
-                    Section { Text(err).foregroundStyle(.red) }
-                }
-                Section { Color.clear.frame(height: 90).listRowBackground(Color.clear) }
             }
-            .navigationTitle("行情")
-            #if os(iOS)
-            .listStyle(.insetGrouped)
-            #endif
-            .scrollContentBackground(.hidden)
-            .task { await vm.load(env: env) }
+            .background(Color.dsGroupedBackground)
+            .hideNavBar()
+            .task(id: auth.status.loggedIn) { await vm.load(env: env) }
             .refreshable { await vm.load(env: env) }
         }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.footnote)
+            .tracking(0.5)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 20)
+            .padding(.bottom, -8)
+    }
+
+    @ViewBuilder
+    private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
     }
 
     @ViewBuilder
     private func watchlistRow(_ quote: StockQuote) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(quote.stockName).font(.system(size: 17, weight: .medium))
+                Text(quote.stockName ?? "").font(.system(size: 17, weight: .medium))
                 Text(quote.stockCode).font(.footnote).foregroundStyle(.secondary).tracking(0.4)
             }
             Spacer()
@@ -84,13 +126,17 @@ public struct MarketsView: View {
                 .font(.system(size: 17, weight: .medium)).monospacedDigit()
             ChangeChip(percent: quote.changePercent, market: quote.market, scheme: env.colorScheme)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     @ViewBuilder
     private func historyRow(_ item: HistoryItem) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.stockName ?? item.stockCode).font(.system(size: 17, weight: .medium))
+                Text(item.stockName ?? item.stockCode)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.primary)
                 Text("\(item.createdAt) · \(item.reportType ?? "report")")
                     .font(.footnote).foregroundStyle(.secondary)
             }
@@ -98,5 +144,7 @@ public struct MarketsView: View {
             ActionChip(action: item.action, label: item.actionLabel)
             Image(systemName: "chevron.right").foregroundStyle(Color.secondary).font(.footnote)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }

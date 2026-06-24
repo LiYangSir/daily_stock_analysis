@@ -10,14 +10,9 @@ final class AlertsViewModel: ObservableObject {
 
     func load(env: AppEnvironment) async {
         loading = true; defer { loading = false }
-        if env.useMockData {
-            rules = MockData.alertRules
-            triggers = MockData.alertTriggers
-            return
-        }
         do {
-            self.rules = try await env.auth.api.send(.get("/alerts/rules"))
-            self.triggers = try await env.auth.api.send(.get("/alerts/triggers", query: ["limit": "20"]))
+            struct RulesResp: Decodable { let items: [AlertRule]? }; let rResp: RulesResp = try await env.auth.api.send(.get("/alerts/rules")); self.rules = rResp.items ?? []
+            struct TriggersResp: Decodable { let items: [AlertTrigger]? }; let tResp: TriggersResp = try await env.auth.api.send(.get("/alerts/triggers", query: ["limit": "20"])); self.triggers = tResp.items ?? []
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
         }
@@ -25,10 +20,9 @@ final class AlertsViewModel: ObservableObject {
 
     func toggle(env: AppEnvironment, rule: AlertRule) async {
         if let idx = rules.firstIndex(where: { $0.id == rule.id }) {
-            rules[idx].enabled.toggle()
+            rules[idx].enabled?.toggle()
         }
-        if env.useMockData { return }
-        let action = rule.enabled ? "disable" : "enable"
+        let action = (rule.enabled == true) ? "disable" : "enable"
         try? await env.auth.api.sendVoid(.init(path: "/alerts/rules/\(rule.id)/\(action)", method: .POST))
     }
 }
@@ -84,13 +78,13 @@ struct AlertsView: View {
                 ForEach(vm.rules) { rule in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(rule.name).font(.system(size: 15, weight: .medium))
-                            Text("\(typeLabel(rule.alertType)) · \(severityLabel(rule.severity)) · \(rule.channels ?? 0) 渠道")
+                            Text(rule.name ?? "").font(.system(size: 15, weight: .medium))
+                            Text("\(typeLabel(rule.alertType ?? "")) · \(severityLabel(rule.severity ?? "")) · \(rule.channels ?? 0) 渠道")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Toggle("", isOn: Binding(
-                            get: { rule.enabled },
+                            get: { rule.enabled ?? false },
                             set: { _ in Task { await vm.toggle(env: env, rule: rule) } }
                         ))
                         .labelsHidden()
@@ -109,13 +103,13 @@ struct AlertsView: View {
                 ForEach(vm.triggers) { t in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(t.ruleName).font(.system(size: 15, weight: .medium))
+                            Text(t.ruleName ?? "").font(.system(size: 15, weight: .medium))
                             Text("\(t.triggeredAt ?? "—") · \(t.message ?? "")")
                                 .font(.caption).foregroundStyle(.secondary)
                                 .lineLimit(2)
                         }
                         Spacer()
-                        statusBadge(t.severity, status: t.status)
+                        statusBadge(t.severity ?? "", status: t.status ?? "")
                     }
                     .padding(.vertical, 8)
                     if t.id != vm.triggers.last?.id { Divider() }

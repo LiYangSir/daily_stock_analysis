@@ -8,10 +8,6 @@ final class UsageViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
-        if env.useMockData {
-            dashboard = MockData.usageDashboard
-            return
-        }
         do {
             self.dashboard = try await env.auth.api.send(.get("/usage/dashboard", query: ["period": period]))
         } catch {
@@ -32,9 +28,12 @@ public struct UsageView: View {
                 periodPicker
                 if let d = vm.dashboard {
                     statGrid(d)
-                    modelsCard(d.modelStats)
-                    callTypesCard(d.callTypes)
-                    recentCard(d.recent)
+                    if let models = d.byModel, !models.isEmpty { modelsCard(models) }
+                    if let types = d.byCallType, !types.isEmpty { callTypesCard(types) }
+                    if let recent = d.recentCalls, !recent.isEmpty { recentCard(recent) }
+                }
+                if let err = vm.errorMessage {
+                    Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
                 }
                 Color.clear.frame(height: 80)
             }
@@ -42,9 +41,7 @@ public struct UsageView: View {
         }
         .background(Color.dsGroupedBackground)
         .navigationTitle("Token 用量")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
         .task { await vm.load(env: env) }
     }
 
@@ -75,10 +72,10 @@ public struct UsageView: View {
     private func statGrid(_ d: UsageDashboard) -> some View {
         let cols = [GridItem(.flexible()), GridItem(.flexible())]
         return LazyVGrid(columns: cols, spacing: 10) {
-            statCard("总 Token", formatTokens(d.totalTokens))
-            statCard("调用次数", String(d.totalCalls))
-            statCard("Prompt", formatTokens(d.promptTokens))
-            statCard("Completion", formatTokens(d.completionTokens))
+            statCard("总 Token", formatTokens(d.totalTokens ?? 0))
+            statCard("调用次数", String(d.totalCalls ?? 0))
+            statCard("Prompt", formatTokens(d.totalPromptTokens ?? 0))
+            statCard("Completion", formatTokens(d.totalCompletionTokens ?? 0))
         }
         .padding(.horizontal, 16)
     }
@@ -93,18 +90,25 @@ public struct UsageView: View {
         .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func modelsCard(_ items: [UsageModelStat]) -> some View {
-        ModuleCard("模型分布") {
+    private func modelsCard(_ items: [UsageModelBreakdown]) -> some View {
+        let total = items.compactMap(\.totalTokens).reduce(0, +)
+        return ModuleCard("模型分布") {
             VStack(spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { idx, m in
+                    let weight = total > 0 ? Double(m.totalTokens ?? 0) / Double(total) : 0
                     HStack(spacing: 8) {
-                        Text(m.model).font(.caption).foregroundStyle(.secondary).frame(width: 80, alignment: .leading)
+                        Text(m.model).font(.caption).foregroundStyle(.secondary)
+                            .frame(width: 100, alignment: .leading).lineLimit(1)
                         GeometryReader { geo in
-                            Capsule().fill(Color.gray.opacity(0.16))
-                            Capsule().fill(palette[idx % palette.count])
-                                .frame(width: geo.size.width * CGFloat(m.weight))
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Color.gray.opacity(0.16))
+                                Capsule().fill(palette[idx % palette.count])
+                                    .frame(width: geo.size.width * CGFloat(weight))
+                            }
                         }.frame(height: 8)
-                        Text(formatTokens(m.tokens)).font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 56, alignment: .trailing)
+                        Text(formatTokens(m.totalTokens ?? 0))
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            .frame(width: 60, alignment: .trailing)
                     }
                 }
             }
@@ -112,18 +116,24 @@ public struct UsageView: View {
         .padding(.horizontal, 16)
     }
 
-    private func callTypesCard(_ items: [UsageCallType]) -> some View {
-        ModuleCard("调用类型") {
+    private func callTypesCard(_ items: [UsageCallTypeBreakdown]) -> some View {
+        let total = items.compactMap(\.calls).reduce(0, +)
+        return ModuleCard("调用类型") {
             VStack(spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { idx, t in
+                    let weight = total > 0 ? Double(t.calls ?? 0) / Double(total) : 0
                     HStack(spacing: 8) {
-                        Text(t.type).font(.caption).foregroundStyle(.secondary).frame(width: 80, alignment: .leading)
+                        Text(callTypeLabel(t.callType)).font(.caption).foregroundStyle(.secondary)
+                            .frame(width: 100, alignment: .leading)
                         GeometryReader { geo in
-                            Capsule().fill(Color.gray.opacity(0.16))
-                            Capsule().fill(palette[idx % palette.count])
-                                .frame(width: geo.size.width * CGFloat(t.weight))
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Color.gray.opacity(0.16))
+                                Capsule().fill(palette[idx % palette.count])
+                                    .frame(width: geo.size.width * CGFloat(weight))
+                            }
                         }.frame(height: 8)
-                        Text("\(t.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 56, alignment: .trailing)
+                        Text("\(t.calls ?? 0)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            .frame(width: 60, alignment: .trailing)
                     }
                 }
             }
@@ -131,14 +141,15 @@ public struct UsageView: View {
         .padding(.horizontal, 16)
     }
 
-    private func recentCard(_ items: [UsageRecord]) -> some View {
+    private func recentCard(_ items: [UsageCallRecord]) -> some View {
         ModuleCard("最近调用 · \(items.count)") {
             VStack(spacing: 0) {
                 ForEach(items) { r in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(r.time) · \(r.type) · \(r.model)").font(.system(size: 13, weight: .medium))
-                            Text("prompt \(formatTokens(r.promptTokens)) · completion \(formatTokens(r.completionTokens)) · \(formatTokens(r.promptTokens + r.completionTokens))")
+                            Text("\(r.calledAt ?? "—") · \(callTypeLabel(r.callType ?? "")) · \(r.model ?? "")")
+                                .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                            Text("prompt \(formatTokens(r.promptTokens ?? 0)) · completion \(formatTokens(r.completionTokens ?? 0)) · \(formatTokens(r.totalTokens ?? 0))")
                                 .font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -152,12 +163,21 @@ public struct UsageView: View {
     }
 
     private var palette: [Color] {
-        [DSColor.accent, .blue, .purple, .green, .orange]
+        [DSColor.accent, .blue, .purple, .green, .orange, .teal]
+    }
+
+    private func callTypeLabel(_ key: String) -> String {
+        switch key {
+        case "analysis": return "个股分析"
+        case "agent": return "AI 对话"
+        case "market_review": return "大盘点评"
+        default: return key
+        }
     }
 
     private func formatTokens(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.2fM", Double(n) / 1_000_000) }
-        if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.1fk", Double(n) / 1_000) }
         return String(n)
     }
 }

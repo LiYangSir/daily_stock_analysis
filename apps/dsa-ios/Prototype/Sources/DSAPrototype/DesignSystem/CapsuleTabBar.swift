@@ -41,10 +41,9 @@ public struct CapsuleTabBar: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: 64)
+        .frame(height: 60)
         .background(.regularMaterial, in: Capsule())
         .overlay(Capsule().stroke(Color.white.opacity(0.5), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
-        .padding(.bottom, 18)
     }
 }

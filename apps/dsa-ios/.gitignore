@@ -6,3 +6,8 @@ Package.resolved
 *.xcworkspace/xcuserdata/
 xcuserdata/
 .DS_Store
+
+# xcodegen-generated artifacts
+PrototypeApp/build/
+PrototypeApp/DSAApp.xcodeproj/
+PrototypeApp/Info.plist

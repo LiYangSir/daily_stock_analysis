@@ -3,7 +3,7 @@ import SwiftUI
 public struct IntelligentImportView: View {
     @EnvironmentObject var env: AppEnvironment
     @State private var mode: Int = 0
-    @State private var items: [IntelligentImportItem] = MockData.intelligentImportItems
+    @State private var items: [IntelligentImportItem] = []
 
     public init() {}
 
@@ -58,15 +58,11 @@ public struct IntelligentImportView: View {
                 .disabled(items.filter(\.selected).isEmpty)
             }
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #endif
+        .dsListStyle()
         .scrollContentBackground(.hidden)
         .background(Color.dsGroupedBackground)
         .navigationTitle("智能导入自选")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .dsInlineTitle()
     }
 
     private func chip(_ title: String, index: Int) -> some View {

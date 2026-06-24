@@ -10,13 +10,8 @@ final class DecisionSignalsViewModel: ObservableObject {
 
     func load(env: AppEnvironment) async {
         loading = true; defer { loading = false }
-        if env.useMockData {
-            signals = MockData.decisionSignals
-            stats = MockData.decisionStats
-            return
-        }
         do {
-            self.signals = try await env.auth.api.send(.get("/decision-signals", query: ["limit": "30"]))
+            struct SigResp: Decodable { let items: [DecisionSignal]? }; let sResp: SigResp = try await env.auth.api.send(.get("/decision-signals", query: ["limit": "30"])); self.signals = sResp.items ?? []
             self.stats = try? await env.auth.api.send(.get("/decision-signals/outcomes/stats"))
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
@@ -24,7 +19,6 @@ final class DecisionSignalsViewModel: ObservableObject {
     }
 
     func sendFeedback(env: AppEnvironment, signal: DecisionSignal, useful: Bool) async {
-        if env.useMockData { return }
         struct Body: Encodable { let useful: Bool }
         let ep = (try? Endpoint.post("/decision-signals/\(signal.id)/feedback", body: Body(useful: useful)))
             ?? Endpoint(path: "/decision-signals/\(signal.id)/feedback", method: .PUT)
@@ -33,7 +27,7 @@ final class DecisionSignalsViewModel: ObservableObject {
 
     var filtered: [DecisionSignal] {
         guard filterAction != "all" else { return signals }
-        return signals.filter { $0.action.rawValue == filterAction }
+        return signals.filter { $0.action?.rawValue == filterAction }
     }
 }
 
@@ -95,10 +89,10 @@ struct DecisionSignalsView: View {
     private func statsCard(_ stats: DecisionSignalStats) -> some View {
         ModuleCard("统计") {
             HStack(spacing: 14) {
-                stat("总数", String(stats.total))
-                stat("命中率", String(format: "%.1f%%", stats.hitRate * 100), color: .green)
-                stat("命中", String(stats.hit), color: .green)
-                stat("未命中", String(stats.miss), color: .red)
+                stat("总数", String(stats.total ?? 0))
+                stat("命中率", String(format: "%.1f%%", (stats.hitRate ?? 0) * 100), color: .green)
+                stat("命中", String(stats.hit ?? 0), color: .green)
+                stat("未命中", String(stats.miss ?? 0), color: .red)
             }
         }
         .padding(.horizontal, 16)
@@ -136,7 +130,7 @@ struct DecisionSignalsView: View {
             }
             Spacer()
             ActionChip(action: s.action, label: s.actionLabel)
-            statusBadge(s.status)
+            statusBadge(s.status ?? "")
         }
         .padding(.vertical, 8)
     }
@@ -180,7 +174,7 @@ struct DecisionSignalDetailSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(signal.stockName ?? signal.stockCode) · \(signal.action.label)")
+                    Text("\(signal.stockName ?? signal.stockCode) · \(signal.action?.label)")
                         .font(.title3.bold())
                     Text("置信 \(String(format: "%.2f", signal.confidence ?? 0)) · \(signal.phase ?? "—") · \(signal.createdAt ?? "—")")
                         .font(.caption).foregroundStyle(.secondary)

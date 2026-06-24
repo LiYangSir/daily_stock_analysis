@@ -10,17 +10,11 @@ final class ReportDetailViewModel: ObservableObject {
     func load(env: AppEnvironment, history: HistoryItem) async {
         loading = true
         defer { loading = false }
-        if env.useMockData {
-            report = MockData.report
-            bars = MockData.kline
-            return
-        }
         do {
             async let report: AnalysisReport = env.auth.api.send(.get("/history/\(history.id)"))
-            async let bars: [KLineData] = env.auth.api.send(.get("/stocks/\(history.stockCode)/history",
-                                                               query: ["period": "daily", "days": "120"]))
+            async let barsResp: StockHistoryResponse = env.auth.api.send(.get("/stocks/\(history.stockCode)/history", query: ["period": "daily", "days": "120"]))
             self.report = try await report
-            self.bars = try await bars
+            self.bars = (try? await barsResp)?.data ?? []
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
         }
@@ -101,7 +95,7 @@ public struct ReportDetailView: View {
                 HStack {
                     FloatingBackButton { dismiss() }
                     Spacer()
-                    CapsuleTitle("\(vm.report?.meta.stockName ?? history.stockName ?? history.stockCode) · \(history.stockCode)")
+                    CapsuleTitle("\(vm.report?.meta?.stockName ?? history.stockName ?? history.stockCode) · \(history.stockCode)")
                     Spacer()
                     Menu {
                         Button { presentedSheet = .runFlow } label: { Label("运行流", systemImage: "point.3.connected.trianglepath.dotted") }
@@ -143,11 +137,11 @@ public struct ReportDetailView: View {
 
     private var headerArea: some View {
         VStack(alignment: .leading, spacing: 6) {
-            PriceCell(price: vm.report?.meta.currentPrice ?? history.currentPrice ?? 0,
+            PriceCell(price: vm.report?.meta?.currentPrice ?? history.currentPrice ?? 0,
                       change: nil,
-                      changePct: vm.report?.meta.changePct ?? history.changePct,
+                      changePct: vm.report?.meta?.changePct ?? history.changePct,
                       market: history.market, scheme: env.colorScheme,
-                      timeLabel: vm.report?.meta.createdAt ?? history.createdAt)
+                      timeLabel: vm.report?.meta?.createdAt ?? history.createdAt)
         }
         .padding(.horizontal, 20)
     }
