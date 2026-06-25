@@ -1,6 +1,10 @@
 import SwiftUI
 import MarkdownUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 @MainActor
 final class ChatViewModel: ObservableObject {
     @Published var messages: [ChatMessage] = []
@@ -39,13 +43,13 @@ final class ChatViewModel: ObservableObject {
         do {
             struct MsgsResp: Decodable {
                 let sessionId: String?
-                let messages: [[String: AnyCodable]]?
+                let messages: [[String: JSONValue]]?
             }
             let resp: MsgsResp = try await env.auth.api.send(.get("/agent/chat/sessions/\(sessionId)"))
             if let rawMsgs = resp.messages {
                 self.messages = rawMsgs.compactMap { dict -> ChatMessage? in
-                    let role = (dict["role"]?.value as? String) ?? "assistant"
-                    let content = (dict["content"]?.value as? String) ?? ""
+                    let role = dict["role"]?.stringValue ?? "assistant"
+                    let content = dict["content"]?.stringValue ?? ""
                     guard let chatRole = ChatRole(rawValue: role) else { return nil }
                     return ChatMessage(role: chatRole, text: content)
                 }
@@ -101,6 +105,9 @@ final class ChatViewModel: ObservableObject {
             let skills: [String]
             let sessionId: String?
         }
+        // 注意：曾尝试在命中股票代码时注入 context={stock_code} 供 agent 复用数据，
+        // 但实测会导致后端 agent 抛 "cannot parse response"（与 context 传参相关），
+        // 故回退为不传 context，保持对话可用。会话导出仍保留。
         request.httpBody = try? JSONEncoder.dsa.encode(
             Body(message: prompt, skills: Array(selectedSkills), sessionId: currentSessionId))
 
@@ -156,6 +163,8 @@ final class ChatViewModel: ObservableObject {
             guard !messages.isEmpty else { return }
             var last = messages[messages.count - 1]
             last.tools.append("\(icon) \(name)\(suffix)")
+            last.toolCount += 1
+            if let d = duration { last.toolDurationTotal += d }
             messages[messages.count - 1] = last
         case "generating":
             let msg = json["message"] as? String ?? "正在生成回复…"
@@ -202,6 +211,15 @@ final class ChatViewModel: ObservableObject {
         messages[messages.count - 1] = last
         isStreaming = false
     }
+
+    /// 把当前会话消息拼成 Markdown（用于导出/分享）。
+    var exportMarkdown: String {
+        guard !messages.isEmpty else { return "_（暂无消息）_" }
+        return messages.enumerated().map { idx, msg -> String in
+            let role = msg.role == .user ? "🧑 用户" : "🤖 助手"
+            return "### \(role)\n\n\(msg.text)"
+        }.joined(separator: "\n\n---\n\n")
+    }
 }
 
 // MARK: - ChatView
@@ -210,6 +228,14 @@ public struct ChatView: View {
     @EnvironmentObject var env: AppEnvironment
     @StateObject private var vm = ChatViewModel()
     @State private var showSessions = false
+    @State private var expandedThinking: Set<UUID> = []
+
+    private let quickQuestions: [String] = [
+        "今天大盘怎么看？",
+        "帮我看一下贵州茅台",
+        "最近有什么热门板块？",
+        "美股和港股有什么机会？",
+    ]
 
     public init() {}
 
@@ -227,6 +253,14 @@ public struct ChatView: View {
                 Spacer()
                 CapsuleTitle(vm.currentSessionId == nil ? "新对话" : "AI 对话")
                 Spacer()
+                ShareLink(item: vm.exportMarkdown) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DSColor.accent)
+                        .frame(width: 36, height: 36)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .disabled(vm.messages.isEmpty)
                 Button { vm.startNewSession() } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .semibold))
@@ -243,8 +277,12 @@ public struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 6) {
-                        ForEach(vm.messages) { msg in
-                            bubble(msg).id(msg.id)
+                        if vm.messages.isEmpty {
+                            emptyState
+                        } else {
+                            ForEach(vm.messages) { msg in
+                                bubble(msg).id(msg.id)
+                            }
                         }
                         Color.clear.frame(height: 8).id("bottom")
                     }
@@ -295,22 +333,14 @@ public struct ChatView: View {
             }
         case .assistant:
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(msg.thinking.enumerated()), id: \.offset) { _, line in
-                    HStack(spacing: 6) {
-                        if msg.isStreaming { thinkingDot }
-                        Text(line)
-                    }
-                    .font(.caption).foregroundStyle(.secondary)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                }
-                if !msg.tools.isEmpty {
-                    Text("📊 \(msg.tools.joined(separator: " · "))")
-                        .font(.caption2).foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
+                if msg.toolCount > 0 || !msg.thinking.isEmpty {
+                    thinkingBlock(msg)
                 }
                 if !msg.text.isEmpty {
                     MarkdownCards(text: msg.text)
+                        .contextMenu {
+                            Button { copyText(msg.text) } label: { Label("复制回复", systemImage: "doc.on.doc") }
+                        }
                 }
             }
             .padding(.leading, 16).padding(.trailing, 40)
@@ -323,6 +353,79 @@ public struct ChatView: View {
         Circle().stroke(DSColor.accent, lineWidth: 1.5)
             .frame(width: 10, height: 10)
             .overlay(Circle().trim(from: 0, to: 0.3).stroke(DSColor.accent, lineWidth: 1.5))
+    }
+
+    @ViewBuilder
+    private func thinkingBlock(_ msg: ChatMessage) -> some View {
+        let expanded = expandedThinking.contains(msg.id) || msg.isStreaming
+        VStack(alignment: .leading, spacing: 4) {
+            Button { if !msg.isStreaming { toggleThinking(msg.id) } } label: {
+                HStack(spacing: 6) {
+                    if msg.isStreaming { thinkingDot }
+                    else { Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.caption2) }
+                    if msg.isStreaming {
+                        Text(msg.thinking.last ?? "思考中…")
+                    } else if msg.toolCount > 0 {
+                        Text("\(msg.toolCount) 个工具" + (msg.toolDurationTotal > 0
+                              ? " · \(String(format: "%.1fs", msg.toolDurationTotal))" : ""))
+                    } else {
+                        Text("思考过程")
+                    }
+                    Spacer()
+                }
+                .font(.caption).foregroundStyle(.secondary)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(Color.gray.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                ForEach(Array(msg.thinking.enumerated()), id: \.offset) { _, line in
+                    Text(line).font(.caption2).foregroundStyle(.secondary)
+                        .padding(.leading, 22).padding(.trailing, 8)
+                }
+                if !msg.tools.isEmpty {
+                    Text(msg.tools.joined(separator: "\n"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .padding(.leading, 22).padding(.trailing, 8)
+                }
+            }
+        }
+    }
+
+    private func toggleThinking(_ id: UUID) {
+        if expandedThinking.contains(id) { expandedThinking.remove(id) }
+        else { expandedThinking.insert(id) }
+    }
+
+    private func copyText(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #endif
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 40)).foregroundStyle(.secondary)
+            Text("开始与 AI 对话").font(.headline)
+            Text("试试这些问题").font(.caption).foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                ForEach(quickQuestions, id: \.self) { q in
+                    Button { vm.draft = q } label: {
+                        Text(q).font(.callout)
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(.primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 32)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
     }
 
     // MARK: - Skills

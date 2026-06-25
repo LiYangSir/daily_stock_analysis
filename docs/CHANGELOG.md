@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [新功能] iOS 原型补完分析 Tab 与助手 Tab：提交分析（多股 + 技能 + 参数 + 通知 + 强制重分析 + 大盘点评）、AI 对话（SSE 流 + 思考气泡 + 工具调用 + 技能多选）、全局 TaskStreamStore（Mock 进度模拟 + 真实 SSE 订阅 /analysis/tasks/stream）。
 - [新功能] iOS 原型补完组合 Tab 三段切换（总览 / 决策信号 / 预警）：投资组合总权益与每日盈亏、仓位环、持仓列表、风险卡片；决策信号过滤 / 统计 / 反馈 sheet；预警规则启用切换与触发记录。报告详情新增 RunFlow 流程图 / Markdown 全文 / 个股历史趋势 三个 sheet 抽屉。
 - [新功能] iOS 原型最终收尾，覆盖 Web 全部能力：选股 (AlphaSift) / 回测 / Token 用量 / 智能导入自选 4 个工具页，LLM 通道 / 通知通道（14 渠道+测试）/ 定时调度 / 认证+配置备份 4 个系统配置子页，从「我的」入口完整跳转，至此 21 屏视觉稿全部落地为 SwiftUI 实现，`swift build` 无 warning 通过。
+- [改进] iOS 大盘复盘详情页展示逻辑与样式对齐 Web `MarketReviewReportView`：新增专用 Hero 卡替代通用 PriceCell 头（避免显示无意义的 ¥0.00），洞察卡改为展示完整摘要并限制 4 行，结构化大盘数据瓦片改描边样式并补齐指数「高/低」列，新增 MarkdownUI `reportProse` 主题（标题按卡片内尺寸缩放、GFM 表格描边 + 交替行、列表紧凑、引用块带 accent 色条），分节卡片正文不再以裸 markdown 默认排版撑乱；涨跌保留 A 股红涨绿跌语义色。
+- [新功能] iOS 原型写侧（write-side）全量落地，此前 `.constant`/空闭包/no-op 的按钮与表单全部接通后端真实写契约：新增统一 `ConfigWriter`（`PUT /system/config` 乐观锁 + 409 冲突重试 + mask_token 保敏感值）与 multipart 上传能力（CSV/图片）；定时调度开关、认证开关与改密、通知渠道测试发送、LLM 通道测试连接/发现模型、`.env` 导入导出与校验，回测运行，自选增删（含 `+` 录入与行内移除），预警规则新建/删除/测试，组合账户/交易/现金/分红/CSV 导入/汇率刷新全链路，决策信号生命周期（关闭/作废/归档 `PATCH`），AI 对话带 `context` 与会话导出，智能导入自选（图片 OCR / 文件 / 文本解析 → 批量合并自选）；`swift build` 与 `xcodebuild`（模拟器）均通过。
 
 ## [3.23.0] - 2026-06-20
 

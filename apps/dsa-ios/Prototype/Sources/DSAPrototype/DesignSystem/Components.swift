@@ -92,32 +92,48 @@ public struct PriceCell: View {
     }
 }
 
-/// Weather 风格模块卡。
+/// shadcn-style Card 组件：描边 + 圆角 + header/content 分区
 public struct ModuleCard<Content: View>: View {
     let title: String
+    let leading: AnyView?
     let trailing: AnyView?
     let content: Content
 
-    public init(_ title: String, trailing: AnyView? = nil, @ViewBuilder content: () -> Content) {
+    public init(_ title: String, leading: AnyView? = nil, trailing: AnyView? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.leading = leading
         self.trailing = trailing
         self.content = content()
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title.uppercased())
-                    .font(.caption2.weight(.medium))
-                    .tracking(0.6)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack(spacing: 8) {
+                leading
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.primary)
                 Spacer()
                 trailing
             }
-            content
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+
+            Divider().padding(.horizontal, 12)
+
+            // Content
+            VStack(alignment: .leading, spacing: 8) {
+                content
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding(16)
-        .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+        )
     }
 }
 

@@ -71,11 +71,16 @@ public struct UsageView: View {
 
     private func statGrid(_ d: UsageDashboard) -> some View {
         let cols = [GridItem(.flexible()), GridItem(.flexible())]
-        return LazyVGrid(columns: cols, spacing: 10) {
-            statCard("总 Token", formatTokens(d.totalTokens ?? 0))
-            statCard("调用次数", String(d.totalCalls ?? 0))
-            statCard("Prompt", formatTokens(d.totalPromptTokens ?? 0))
-            statCard("Completion", formatTokens(d.totalCompletionTokens ?? 0))
+        return VStack(alignment: .leading, spacing: 8) {
+            if let from = d.fromDate, let to = d.toDate {
+                Text("\(from) ~ \(to)").font(.caption2).foregroundStyle(.tertiary).padding(.horizontal, 2)
+            }
+            LazyVGrid(columns: cols, spacing: 10) {
+                statCard("总 Token", formatTokens(d.totalTokens ?? 0))
+                statCard("调用次数", String(d.totalCalls ?? 0))
+                statCard("Prompt", formatTokens(d.totalPromptTokens ?? 0))
+                statCard("Completion", formatTokens(d.totalCompletionTokens ?? 0))
+            }
         }
         .padding(.horizontal, 16)
     }
@@ -96,19 +101,28 @@ public struct UsageView: View {
             VStack(spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { idx, m in
                     let weight = total > 0 ? Double(m.totalTokens ?? 0) / Double(total) : 0
-                    HStack(spacing: 8) {
-                        Text(m.model).font(.caption).foregroundStyle(.secondary)
-                            .frame(width: 100, alignment: .leading).lineLimit(1)
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(Color.gray.opacity(0.16))
-                                Capsule().fill(palette[idx % palette.count])
-                                    .frame(width: geo.size.width * CGFloat(weight))
-                            }
-                        }.frame(height: 8)
-                        Text(formatTokens(m.totalTokens ?? 0))
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                            .frame(width: 60, alignment: .trailing)
+                    VStack(spacing: 3) {
+                        HStack(spacing: 8) {
+                            Text(m.model).font(.caption).foregroundStyle(.secondary)
+                                .frame(width: 100, alignment: .leading).lineLimit(1)
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.gray.opacity(0.16))
+                                    Capsule().fill(palette[idx % palette.count])
+                                        .frame(width: geo.size.width * CGFloat(weight))
+                                }
+                            }.frame(height: 8)
+                            Text(formatTokens(m.totalTokens ?? 0))
+                                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                .frame(width: 60, alignment: .trailing)
+                        }
+                        HStack(spacing: 6) {
+                            Text("P \(formatTokens(m.promptTokens ?? 0))")
+                            Text("· C \(formatTokens(m.completionTokens ?? 0))")
+                            if let mx = m.maxTotalTokens, mx > 0 { Text("· 峰值 \(formatTokens(mx))") }
+                            Spacer()
+                        }
+                        .font(.caption2).foregroundStyle(.tertiary).padding(.leading, 108)
                     }
                 }
             }
@@ -122,18 +136,27 @@ public struct UsageView: View {
             VStack(spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { idx, t in
                     let weight = total > 0 ? Double(t.calls ?? 0) / Double(total) : 0
-                    HStack(spacing: 8) {
-                        Text(callTypeLabel(t.callType)).font(.caption).foregroundStyle(.secondary)
-                            .frame(width: 100, alignment: .leading)
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(Color.gray.opacity(0.16))
-                                Capsule().fill(palette[idx % palette.count])
-                                    .frame(width: geo.size.width * CGFloat(weight))
-                            }
-                        }.frame(height: 8)
-                        Text("\(t.calls ?? 0)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                            .frame(width: 60, alignment: .trailing)
+                    VStack(spacing: 3) {
+                        HStack(spacing: 8) {
+                            Text(callTypeLabel(t.callType)).font(.caption).foregroundStyle(.secondary)
+                                .frame(width: 100, alignment: .leading)
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.gray.opacity(0.16))
+                                    Capsule().fill(palette[idx % palette.count])
+                                        .frame(width: geo.size.width * CGFloat(weight))
+                                }
+                            }.frame(height: 8)
+                            Text("\(t.calls ?? 0)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                .frame(width: 60, alignment: .trailing)
+                        }
+                        HStack(spacing: 6) {
+                            Text("P \(formatTokens(t.promptTokens ?? 0))")
+                            Text("· C \(formatTokens(t.completionTokens ?? 0))")
+                            Text("· \(formatTokens(t.totalTokens ?? 0))")
+                            Spacer()
+                        }
+                        .font(.caption2).foregroundStyle(.tertiary).padding(.leading, 108)
                     }
                 }
             }
@@ -149,8 +172,11 @@ public struct UsageView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(r.calledAt ?? "—") · \(callTypeLabel(r.callType ?? "")) · \(r.model ?? "")")
                                 .font(.system(size: 13, weight: .medium)).lineLimit(1)
-                            Text("prompt \(formatTokens(r.promptTokens ?? 0)) · completion \(formatTokens(r.completionTokens ?? 0)) · \(formatTokens(r.totalTokens ?? 0))")
-                                .font(.caption2).foregroundStyle(.secondary)
+                            HStack(spacing: 6) {
+                                Text("prompt \(formatTokens(r.promptTokens ?? 0)) · completion \(formatTokens(r.completionTokens ?? 0)) · \(formatTokens(r.totalTokens ?? 0))")
+                                if let code = r.stockCode, !code.isEmpty { Text("· \(code)") }
+                            }
+                            .font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
                     }

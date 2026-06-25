@@ -26,26 +26,33 @@ public struct MarkdownCards: View {
 
     private func singleCard(_ content: String) -> some View {
         Markdown(content)
-            .markdownTextStyle { FontSize(14) }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 16))
+            .reportMarkdown()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.15), lineWidth: 0.5))
     }
 
     private func sectionCard(_ section: MdSection) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
             if let title = section.title {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                Divider().padding(.horizontal, 12)
             }
             if !section.body.isEmpty {
                 Markdown(section.body)
-                    .markdownTextStyle { FontSize(13) }
+                    .reportMarkdown()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.15), lineWidth: 0.5))
     }
 
     // MARK: - Parsing (aligned with Web UI splitMarketReviewSections)
