@@ -161,7 +161,7 @@ public struct MarketsView: View {
                         groupedCard {
                             ForEach(bars) { bar in
                                 Button { presentLatestReport(code: bar.stockCode) } label: {
-                                    stockBarRow(bar)
+                                    stockBarRow(bar).contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 if bar.id != bars.last?.id {
@@ -176,7 +176,7 @@ public struct MarketsView: View {
                         groupedCard {
                             ForEach(vm.history) { item in
                                 Button { env.presentedReport = item } label: {
-                                    historyRow(item)
+                                    historyRow(item).contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 if item.id != vm.history.last?.id {

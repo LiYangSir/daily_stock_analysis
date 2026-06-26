@@ -158,7 +158,7 @@ struct DecisionSignalsView: View {
                 VStack(spacing: 0) {
                     ForEach(vm.filtered) { s in
                         Button { presented = s } label: {
-                            signalRow(s)
+                            signalRow(s).contentShape(Rectangle())
                         }.buttonStyle(.plain)
                         if s.id != vm.filtered.last?.id { Divider() }
                     }
