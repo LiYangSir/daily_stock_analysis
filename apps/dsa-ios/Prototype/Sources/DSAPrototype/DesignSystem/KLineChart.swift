@@ -32,6 +32,11 @@ public struct KLineChart: View {
         let bodyW = max(2, min(6, 280.0 / Double(max(bars.count, 1))))
         let wickW = max(1, bodyW * 0.4)
         let thin = StrokeStyle(lineWidth: 1)
+        // 动态纵坐标：贴合数据区间（最低~最高），不从 0 起，留 8% 余量。
+        let yLo = bars.map(\.low).min() ?? 0
+        let yHi = bars.map(\.high).max() ?? 1
+        let span = max(yHi - yLo, abs(yHi) * 0.05 + 0.01)
+        let pad = span * 0.08
 
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
@@ -78,6 +83,7 @@ public struct KLineChart: View {
                 }
             }
             .chartXAxis(.hidden)
+            .chartYScale(domain: (yLo - pad)...(yHi + pad))
             .chartYAxis {
                 AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { _ in
                     AxisGridLine().foregroundStyle(Color.secondary.opacity(0.18))
