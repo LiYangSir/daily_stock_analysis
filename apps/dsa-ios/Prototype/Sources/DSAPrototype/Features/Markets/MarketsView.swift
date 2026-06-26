@@ -9,12 +9,18 @@ final class MarketsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
-        loading = true
         errorMessage = nil
 
         struct WatchlistResp: Decodable { let stockCodes: [String]? }
 
-        // 并发：自选清单 + 个股汇总 + 历史报告（均为快速元数据请求）
+        // 首屏秒开：先用磁盘缓存渲染历史报告/个股汇总；命中缓存则不显示骨架。
+        let barCache: StockBarResponse? = await env.auth.api.sendCached(.get("/history/stocks", query: ["limit": "200"]))
+        let histCache: HistoryListResponse? = await env.auth.api.sendCached(.get("/history", query: ["limit": "20"]))
+        if let barCache { self.stockBar = barCache.items ?? [] }
+        if let histCache { self.history = histCache.items ?? [] }
+        loading = (barCache == nil && histCache == nil)
+
+        // 并发：自选清单 + 个股汇总 + 历史报告（网络刷新，实时行情仍逐只后台拉取）
         async let watchlistTask: WatchlistResp? = try? env.auth.api.send(.get("/stocks/watchlist"))
         async let barTask: StockBarResponse? = try? env.auth.api.send(.get("/history/stocks", query: ["limit": "200"]))
         async let historyTask: HistoryListResponse? = try? env.auth.api.send(.get("/history", query: ["limit": "20"]))
@@ -27,8 +33,6 @@ final class MarketsViewModel: ObservableObject {
         self.stockBar = barResp?.items ?? []
         self.history = historyResp?.items ?? []
 
-        // 元数据就绪后立即结束 loading：历史报告 / 个股汇总先行渲染；
-        // 自选实时行情（逐只 /quote，可能较慢）改为后台逐只刷新，不再阻塞整页。
         loading = false
         if watchlistResp == nil && historyResp == nil && barResp == nil {
             errorMessage = "加载失败，请检查网络或下拉刷新"

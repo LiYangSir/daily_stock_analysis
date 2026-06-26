@@ -25,13 +25,44 @@ public actor APIClient {
 
     public func send<T: Decodable & Sendable>(_ endpoint: Endpoint, as type: T.Type = T.self) async throws -> T {
         let request = try makeRequest(endpoint)
-        let (data, response) = try await dataTask(for: request)
-        try validate(response: response, data: data, url: request.url)
+        let cacheKey = ResponseCache.cacheKeyIfCacheable(
+            method: endpoint.method.rawValue, path: endpoint.path, query: endpoint.query)
         do {
-            return try JSONDecoder.dsa.decode(T.self, from: data)
+            let (data, response) = try await dataTask(for: request)
+            try validate(response: response, data: data, url: request.url)
+            // 读类 GET 成功：落盘缓存（仅 2xx 才走到这里）
+            if let cacheKey { await ResponseCache.shared.write(data, for: cacheKey) }
+            do {
+                return try JSONDecoder.dsa.decode(T.self, from: data)
+            } catch {
+                throw APIError.decoding(error)
+            }
         } catch {
-            throw APIError.decoding(error)
+            // 离线兜底：仅网络层失败（非取消、非 HTTP 业务错误）时，返回该 GET 的上次缓存。
+            if let cacheKey, Self.isTransport(error),
+               let cached = await ResponseCache.shared.read(cacheKey),
+               let decoded = try? JSONDecoder.dsa.decode(T.self, from: cached) {
+                return decoded
+            }
+            throw error
         }
+    }
+
+    /// 是否为可走离线兜底的「网络层」错误（取消与 HTTP 业务错误不算）。
+    private static func isTransport(_ error: Error) -> Bool {
+        if case .transport(let underlying) = error as? APIError {
+            return !(underlying is CancellationError)
+        }
+        return false
+    }
+
+    /// 读取该 GET 的缓存并解码（首屏秒开：先渲染缓存，再由网络刷新）。
+    /// 无缓存或解码失败返回 nil；不做网络请求。
+    public func sendCached<T: Decodable & Sendable>(_ endpoint: Endpoint, as type: T.Type = T.self) async -> T? {
+        guard let key = ResponseCache.cacheKeyIfCacheable(
+            method: endpoint.method.rawValue, path: endpoint.path, query: endpoint.query),
+              let cached = await ResponseCache.shared.read(key) else { return nil }
+        return try? JSONDecoder.dsa.decode(T.self, from: cached)
     }
 
     public func sendVoid(_ endpoint: Endpoint) async throws {
