@@ -58,10 +58,12 @@ struct PriceChartView: UIViewRepresentable {
         chart.setScaleEnabled(true)
         chart.pinchZoomEnabled = true
         chart.scaleYEnabled = false          // 仅 X 轴缩放，Y 自适应数据
+        chart.autoScaleMinMaxEnabled = true  // Y 轴随可见区间动态重算
         chart.leftAxis.enabled = false
         chart.rightAxis.enabled = true       // 价格轴在右
         chart.rightAxis.labelFont = .systemFont(ofSize: 9)
         chart.rightAxis.labelTextColor = .secondaryLabel
+        chart.rightAxis.setLabelCount(4, force: false)   // 限制刻度数，避免重叠
         chart.rightAxis.drawGridLinesEnabled = true
         chart.rightAxis.gridColor = UIColor.secondaryLabel.withAlphaComponent(0.12)
         chart.xAxis.labelPosition = .topInside
@@ -152,9 +154,11 @@ struct VolumeChartView: UIViewRepresentable {
         chart.rightAxis.enabled = true
         chart.rightAxis.labelFont = .systemFont(ofSize: 8)
         chart.rightAxis.labelTextColor = .secondaryLabel
+        chart.rightAxis.setLabelCount(2, force: false)
         chart.rightAxis.drawGridLinesEnabled = false
         chart.xAxis.enabled = false
         chart.fitBars = true
+        chart.autoScaleMinMaxEnabled = true
         chart.highlightPerTapEnabled = false
         chart.highlightPerDragEnabled = false
         syncer.volume = chart
@@ -193,7 +197,9 @@ struct MACDChartView: UIViewRepresentable {
         chart.rightAxis.enabled = true
         chart.rightAxis.labelFont = .systemFont(ofSize: 8)
         chart.rightAxis.labelTextColor = .secondaryLabel
+        chart.rightAxis.setLabelCount(3, force: false)
         chart.rightAxis.drawGridLinesEnabled = false
+        chart.autoScaleMinMaxEnabled = true
         chart.xAxis.labelPosition = .bottom
         chart.xAxis.labelFont = .systemFont(ofSize: 9)
         chart.xAxis.labelTextColor = .secondaryLabel
