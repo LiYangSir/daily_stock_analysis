@@ -15,6 +15,10 @@ final class ReportDetailViewModel: ObservableObject {
     @Published var loading = false
     @Published var errorMessage: String?
     @Published var copiedField: String?
+    // 图表周期 / 范围（对齐同花顺：日/周/月 + 拉长/拉短）
+    @Published var period: String = "daily"       // daily / weekly / monthly
+    @Published var rangeDays: Int = 120           // 60 / 120 / 250
+    @Published var loadingBars = false
 
     /// 复制文本到剪贴板并短暂高亮对应字段。
     func flashCopy(_ text: String, field: String) {
@@ -33,7 +37,7 @@ final class ReportDetailViewModel: ObservableObject {
         struct MdResp: Decodable { let content: String? }
 
         async let reportTask: AnalysisReport? = try? env.auth.api.send(.get("/history/\(history.recordId)"))
-        async let barsTask: StockHistoryResponse? = try? env.auth.api.send(.get("/stocks/\(history.stockCode)/history", query: ["period": "daily", "days": "120"]))
+        async let barsTask: StockHistoryResponse? = try? env.auth.api.send(.get("/stocks/\(history.stockCode)/history", query: ["period": period, "days": "\(rangeDays)"]))
         async let mdTask: MdResp? = try? env.auth.api.send(.get("/history/\(history.recordId)/markdown"))
         async let diagTask: RunDiagnosticSummaryResponse? = try? env.auth.api.send(.get("/history/\(history.recordId)/diagnostics"))
         async let newsTask: NewsIntelResponse? = try? env.auth.api.send(.get("/history/\(history.recordId)/news", query: ["limit": "20"]))
@@ -47,6 +51,14 @@ final class ReportDetailViewModel: ObservableObject {
         if report == nil && markdownContent.isEmpty {
             errorMessage = "报告加载失败 (id=\(history.recordId))"
         }
+    }
+
+    /// 切换周期/范围后只重拉 K 线（不动报告其余部分）。
+    func reloadBars(env: AppEnvironment, code: String) async {
+        loadingBars = true; defer { loadingBars = false }
+        let resp: StockHistoryResponse? = try? await env.auth.api.send(
+            .get("/stocks/\(code)/history", query: ["period": period, "days": "\(rangeDays)"]))
+        self.bars = resp?.data ?? []
     }
 }
 
@@ -198,15 +210,64 @@ public struct ReportDetailView: View {
 
     @ViewBuilder
     private var chartArea: some View {
-        if !vm.bars.isEmpty {
+        if !vm.bars.isEmpty || vm.loadingBars {
             VStack(alignment: .leading, spacing: 12) {
-                marketStatStrip
-                KLineChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
-                VolumeChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
-                MACDChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                chartToolbar
+                if vm.loadingBars {
+                    HStack { Spacer(); ProgressView(); Spacer() }.padding(.vertical, 40)
+                } else {
+                    marketStatStrip
+                    KLineChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                    VolumeChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                    MACDChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                }
             }
             .padding(.horizontal, 16)
         }
+    }
+
+    /// 图表工具条：周期 日/周/月 + 范围 拉长/拉短（对齐同花顺）。
+    private var chartToolbar: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                ForEach(["daily", "weekly", "monthly"], id: \.self) { p in periodChip(p) }
+            }
+            Spacer()
+            HStack(spacing: 4) {
+                ForEach([60, 120, 250], id: \.self) { d in rangeChip(d) }
+            }
+        }
+        .font(.system(size: 11, weight: .medium))
+        .padding(.horizontal, 4)
+    }
+
+    private func periodChip(_ p: String) -> some View {
+        let active = vm.period == p
+        let label = ["daily": "日", "weekly": "周", "monthly": "月"][p] ?? p
+        return Button {
+            guard !active else { return }
+            vm.period = p
+            Task { await vm.reloadBars(env: env, code: history.stockCode) }
+        } label: {
+            Text(label).padding(.horizontal, 9).padding(.vertical, 3)
+                .background(active ? DSColor.accent.opacity(0.16) : Color.gray.opacity(0.10), in: Capsule())
+                .foregroundStyle(active ? DSColor.accent : .secondary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func rangeChip(_ d: Int) -> some View {
+        let active = vm.rangeDays == d
+        return Button {
+            guard !active else { return }
+            vm.rangeDays = d
+            Task { await vm.reloadBars(env: env, code: history.stockCode) }
+        } label: {
+            Text("\(d)").padding(.horizontal, 9).padding(.vertical, 3)
+                .background(active ? DSColor.accent.opacity(0.16) : Color.gray.opacity(0.10), in: Capsule())
+                .foregroundStyle(active ? DSColor.accent : .secondary)
+        }
+        .buttonStyle(.plain)
     }
 
     /// 行情明细（对齐同花顺数据条）：取最新 K 线 OHLCV + 报告时点的量比/换手率/涨跌幅。
