@@ -8,8 +8,10 @@ final class UsageViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func load(env: AppEnvironment) async {
+        loading = true; defer { loading = false }
         do {
             self.dashboard = try await env.auth.api.send(.get("/usage/dashboard", query: ["period": period]))
+            errorMessage = nil
         } catch {
             errorMessage = (error as? APIError)?.errorDescription
         }
@@ -26,14 +28,17 @@ public struct UsageView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 periodPicker
-                if let d = vm.dashboard {
+                if let err = vm.errorMessage {
+                    ErrorStateView(message: err) { Task { await vm.load(env: env) } }
+                } else if vm.loading {
+                    ContentSkeleton(lines: 4)
+                } else if let d = vm.dashboard {
                     statGrid(d)
                     if let models = d.byModel, !models.isEmpty { modelsCard(models) }
                     if let types = d.byCallType, !types.isEmpty { callTypesCard(types) }
                     if let recent = d.recentCalls, !recent.isEmpty { recentCard(recent) }
-                }
-                if let err = vm.errorMessage {
-                    Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
+                } else {
+                    EmptyStateView(icon: "gauge.with.dots.needle.50percent", title: "暂无用量数据")
                 }
                 Color.clear.frame(height: 80)
             }

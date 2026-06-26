@@ -141,31 +141,37 @@ public struct BacktestView: View {
 
     private var resultsCard: some View {
         ModuleCard("个股结果 · \(vm.results.count)") {
-            VStack(spacing: 0) {
-                ForEach(vm.results) { r in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.stockName ?? r.code).font(.system(size: 15, weight: .medium))
-                            Text("\(r.analysisDate ?? "—") · \(r.marketPhase ?? "—") · 预期 \(r.directionExpected ?? "—")\(r.actualMovement.map { " · 实际 \($0)" } ?? "")")
-                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                            HStack(spacing: 8) {
-                                if let ret = r.stockReturnPct {
-                                    Text("个股 \(String(format: "%+.1f%%", ret))")
+            if vm.results.isEmpty {
+                Text("尚未有回测结果，点「运行回测」生成")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(vm.results) { r in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(r.stockName ?? r.code).font(.system(size: 15, weight: .medium))
+                                Text("\(r.analysisDate ?? "—") · \(r.marketPhase ?? "—") · 预期 \(r.directionExpected ?? "—")\(r.actualMovement.map { " · 实际 \($0)" } ?? "")")
+                                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                HStack(spacing: 8) {
+                                    if let ret = r.stockReturnPct {
+                                        Text("个股 \(String(format: "%+.1f%%", ret))")
+                                    }
+                                    if let sim = r.simulatedReturnPct {
+                                        Text("模拟 \(String(format: "%+.1f%%", sim))")
+                                    }
+                                    if r.hitStopLoss == true { Text("触及止损").foregroundStyle(.red) }
+                                    if r.hitTakeProfit == true { Text("触及止盈").foregroundStyle(.green) }
+                                    Spacer()
                                 }
-                                if let sim = r.simulatedReturnPct {
-                                    Text("模拟 \(String(format: "%+.1f%%", sim))")
-                                }
-                                if r.hitStopLoss == true { Text("触及止损").foregroundStyle(.red) }
-                                if r.hitTakeProfit == true { Text("触及止盈").foregroundStyle(.green) }
-                                Spacer()
+                                .font(.caption2).foregroundStyle(.secondary)
                             }
-                            .font(.caption2).foregroundStyle(.secondary)
+                            Spacer()
+                            outcomeBadge(r.outcome ?? "—")
                         }
-                        Spacer()
-                        outcomeBadge(r.outcome ?? "—")
+                        .padding(.vertical, 8)
+                        if r.id != vm.results.last?.id { Divider() }
                     }
-                    .padding(.vertical, 8)
-                    if r.id != vm.results.last?.id { Divider() }
                 }
             }
         }

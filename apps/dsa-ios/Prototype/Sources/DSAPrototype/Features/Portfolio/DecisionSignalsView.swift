@@ -73,9 +73,15 @@ struct DecisionSignalsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 filterRow
                 if let stats = vm.stats { statsCard(stats) }
-                signalListCard
                 if let err = vm.errorMessage {
-                    Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
+                    ErrorStateView(message: err) { Task { await vm.load(env: env) } }
+                } else if vm.loading && vm.signals.isEmpty {
+                    ContentSkeleton(lines: 4)
+                } else if vm.signals.isEmpty {
+                    EmptyStateView(icon: "chart.line.uptrend.xyaxis", title: "暂无决策信号",
+                                   subtitle: "决策信号由分析报告自动提取，提交分析后会在此展示")
+                } else {
+                    signalListCard
                 }
                 Color.clear.frame(height: 100)
             }

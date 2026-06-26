@@ -293,8 +293,10 @@ struct PortfolioOverviewView: View {
                     }
                 } else if vm.loading {
                     ContentSkeleton(lines: 4)
+                } else if let err = vm.errorMessage {
+                    ErrorStateView(message: err) { Task { await vm.load(env: env) } }
                 } else {
-                    // 没有任何账户时也允许新建账户
+                    // 无账户、无错误：允许新建账户
                     actionsCard
                 }
                 if !vm.recentTrades.isEmpty { recentTradesCard(vm.recentTrades) }
@@ -303,8 +305,9 @@ struct PortfolioOverviewView: View {
                     Label(info, systemImage: "checkmark.seal.fill")
                         .font(.footnote).foregroundStyle(.green).padding(.horizontal, 20)
                 }
-                if let err = vm.errorMessage {
-                    Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
+                // 有快照但仍有（如 /risk）错误时，底部小字提示
+                if vm.snapshot != nil, let err = vm.errorMessage {
+                    Text(err).font(.footnote).foregroundStyle(.orange).padding(.horizontal, 20)
                 }
                 Color.clear.frame(height: 100)
             }

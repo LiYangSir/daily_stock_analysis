@@ -124,16 +124,11 @@ public struct MarketsView: View {
                     }
 
                     if let err = vm.errorMessage {
-                        Text(err).font(.caption).foregroundStyle(.red)
-                            .padding(.horizontal, 20).padding(.top, 8)
-                    }
-
-                    if !vm.loading && vm.watchlist.isEmpty && vm.history.isEmpty && vm.errorMessage == nil {
-                        VStack(spacing: 8) {
-                            Image(systemName: "chart.bar.xaxis").font(.largeTitle).foregroundStyle(.secondary)
-                            Text("暂无数据，下拉刷新").font(.callout).foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity).padding(.top, 40)
+                        ErrorStateView(message: err) { Task { await vm.load(env: env) } }
+                            .padding(.top, 24)
+                    } else if !vm.loading && vm.watchlist.isEmpty && vm.history.isEmpty && vm.stockBar.isEmpty {
+                        EmptyStateView(icon: "chart.bar.xaxis", title: "暂无数据",
+                                       subtitle: "下拉可刷新；在「分析」页生成报告后会出现在历史报告")
                     }
 
                     watchlistHeader

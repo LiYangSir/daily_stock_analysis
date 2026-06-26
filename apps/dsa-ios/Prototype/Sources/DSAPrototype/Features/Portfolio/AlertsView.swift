@@ -194,6 +194,10 @@ struct AlertsView: View {
             }
             .buttonStyle(.plain)
         )) {
+            if vm.rules.isEmpty {
+                Text("暂无规则，点右上角 + 新建").font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+            } else {
             VStack(spacing: 0) {
                 ForEach(vm.rules) { rule in
                     VStack(alignment: .leading, spacing: 4) {
@@ -246,12 +250,17 @@ struct AlertsView: View {
                     if rule.id != vm.rules.last?.id { Divider() }
                 }
             }
+            }
         }
         .padding(.horizontal, 16)
     }
 
     private var triggersCard: some View {
         ModuleCard("最近触发") {
+            if vm.triggers.isEmpty {
+                Text("暂无触发记录").font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+            } else {
             VStack(spacing: 0) {
                 ForEach(vm.triggers) { t in
                     VStack(alignment: .leading, spacing: 4) {
@@ -281,12 +290,17 @@ struct AlertsView: View {
                     if t.id != vm.triggers.last?.id { Divider() }
                 }
             }
+            }
         }
         .padding(.horizontal, 16)
     }
 
     private var notificationsCard: some View {
         ModuleCard("通知记录") {
+            if vm.notifications.isEmpty {
+                Text("暂无通知记录").font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+            } else {
             VStack(spacing: 0) {
                 ForEach(vm.notifications) { n in
                     VStack(alignment: .leading, spacing: 4) {
@@ -314,6 +328,7 @@ struct AlertsView: View {
                     .padding(.vertical, 8)
                     if n.id != vm.notifications.last?.id { Divider() }
                 }
+            }
             }
         }
         .padding(.horizontal, 16)
