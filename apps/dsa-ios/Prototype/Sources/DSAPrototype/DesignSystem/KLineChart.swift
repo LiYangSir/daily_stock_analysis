@@ -1,6 +1,15 @@
 import SwiftUI
 import Charts
 
+/// 同花顺风格配色：红涨绿跌 + MA 橙黄/紫/蓝。仅图表内使用，不影响全局涨跌语义色。
+enum THSColor {
+    static let up = Color(red: 0.88, green: 0.13, blue: 0.20)    // 红
+    static let down = Color(red: 0.08, green: 0.58, blue: 0.30)  // 绿
+    static let ma5 = Color(red: 0.95, green: 0.62, blue: 0.10)   // 橙黄
+    static let ma10 = Color(red: 0.60, green: 0.27, blue: 0.85)  // 紫
+    static let ma20 = Color(red: 0.16, green: 0.56, blue: 0.92)  // 蓝
+}
+
 /// K 线 + MA5/10/20 主图（Swift Charts）。原型版本仅日线。
 public struct KLineChart: View {
     let bars: [KLineData]
@@ -14,17 +23,21 @@ public struct KLineChart: View {
     }
 
     public var body: some View {
-        let upColor = DSColor.up(market, scheme: scheme)
-        let downColor = DSColor.down(market, scheme: scheme)
+        let upColor = THSColor.up
+        let downColor = THSColor.down
         let ma5 = movingAverage(window: 5)
         let ma10 = movingAverage(window: 10)
         let ma20 = movingAverage(window: 20)
+        // 自适应粗细：K 线数量多时收窄，避免重叠；MA 线统一 1pt 细线。
+        let bodyW = max(2, min(6, 280.0 / Double(max(bars.count, 1))))
+        let wickW = max(1, bodyW * 0.4)
+        let thin = StrokeStyle(lineWidth: 1)
 
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                legend("MA5", value: ma5.last?.value, color: .orange)
-                legend("MA10", value: ma10.last?.value, color: .blue)
-                legend("MA20", value: ma20.last?.value, color: .purple)
+                legend("MA5", value: ma5.last?.value, color: THSColor.ma5)
+                legend("MA10", value: ma10.last?.value, color: THSColor.ma10)
+                legend("MA20", value: ma20.last?.value, color: THSColor.ma20)
             }
             .font(.system(size: 11))
             .padding(.horizontal, 4)
@@ -37,30 +50,30 @@ public struct KLineChart: View {
                         x: x,
                         yStart: .value("low", bar.low),
                         yEnd: .value("high", bar.high),
-                        width: .fixed(1)
+                        width: .fixed(wickW)
                     )
                     .foregroundStyle(isUp ? upColor : downColor)
                     RectangleMark(
                         x: x,
                         yStart: .value("o", bar.open),
                         yEnd: .value("c", bar.close),
-                        width: .fixed(5)
+                        width: .fixed(bodyW)
                     )
                     .foregroundStyle(isUp ? upColor : downColor)
                 }
-                ForEach(Array(ma5.enumerated()), id: \.offset) { i, v in
+                ForEach(Array(ma5.enumerated()), id: \.offset) { _, v in
                     LineMark(x: .value("idx", v.index), y: .value("ma5", v.value))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(THSColor.ma5).lineStyle(thin)
                         .interpolationMethod(.monotone)
                 }
                 ForEach(Array(ma10.enumerated()), id: \.offset) { _, v in
                     LineMark(x: .value("idx", v.index), y: .value("ma10", v.value))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(THSColor.ma10).lineStyle(thin)
                         .interpolationMethod(.monotone)
                 }
                 ForEach(Array(ma20.enumerated()), id: \.offset) { _, v in
                     LineMark(x: .value("idx", v.index), y: .value("ma20", v.value))
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(THSColor.ma20).lineStyle(thin)
                         .interpolationMethod(.monotone)
                 }
             }
@@ -112,8 +125,8 @@ public struct VolumeChart: View {
     }
 
     public var body: some View {
-        let upColor = DSColor.up(market, scheme: scheme)
-        let downColor = DSColor.down(market, scheme: scheme)
+        let upColor = THSColor.up
+        let downColor = THSColor.down
         Chart {
             ForEach(Array(bars.enumerated()), id: \.offset) { index, bar in
                 BarMark(x: .value("idx", index), y: .value("vol", bar.volume ?? 0), width: .fixed(5))
@@ -146,8 +159,8 @@ public struct MACDChart: View {
 
     public var body: some View {
         let macd = computeMACD()
-        let upColor = DSColor.up(market, scheme: scheme)
-        let downColor = DSColor.down(market, scheme: scheme)
+        let upColor = THSColor.up
+        let downColor = THSColor.down
 
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 12) {
