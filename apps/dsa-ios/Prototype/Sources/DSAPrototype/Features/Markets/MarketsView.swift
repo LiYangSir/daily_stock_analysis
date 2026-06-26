@@ -120,6 +120,7 @@ public struct MarketsView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     CompactPageTitle("行情") {
                         Image(systemName: "ellipsis").foregroundStyle(DSColor.accent)
+                            .accessibilityLabel("更多")
                     }
 
                     if vm.loading {
@@ -241,6 +242,7 @@ public struct MarketsView: View {
             Button { newCode = ""; showAdd = true } label: {
                 Image(systemName: "plus.circle.fill").foregroundStyle(DSColor.accent)
             }
+            .accessibilityLabel("添加自选")
         }
         .padding(.horizontal, 20)
         .padding(.bottom, -8)

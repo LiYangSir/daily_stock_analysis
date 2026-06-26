@@ -250,6 +250,7 @@ public struct ChatView: View {
                         .frame(width: 36, height: 36)
                         .background(.regularMaterial, in: Circle())
                 }
+                .accessibilityLabel("历史会话")
                 Spacer()
                 CapsuleTitle(vm.currentSessionId == nil ? "新对话" : "AI 对话")
                 Spacer()
@@ -261,6 +262,7 @@ public struct ChatView: View {
                         .background(.regularMaterial, in: Circle())
                 }
                 .disabled(vm.messages.isEmpty)
+                .accessibilityLabel("导出会话")
                 Button { vm.startNewSession() } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .semibold))
@@ -268,6 +270,7 @@ public struct ChatView: View {
                         .frame(width: 36, height: 36)
                         .background(.regularMaterial, in: Circle())
                 }
+                .accessibilityLabel("新建对话")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -472,6 +475,7 @@ public struct ChatView: View {
                     .foregroundStyle(.white)
             }
             .disabled(vm.draft.isEmpty && !vm.isStreaming)
+            .accessibilityLabel(vm.isStreaming ? "停止生成" : "发送")
             .padding(.trailing, 6)
         }
         .padding(.vertical, 6)
