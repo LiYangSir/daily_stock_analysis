@@ -13,6 +13,7 @@ final class AnalysisSubmitViewModel: ObservableObject {
     @Published var forceRefresh: Bool = false
     @Published var submitting = false
     @Published var errorMessage: String?
+    @Published var submitInfo: String?      // 提交成功提示（含 task_id），用于定位「提交是否真的成功」
 
     func load(env: AppEnvironment) async {
         do {
@@ -58,9 +59,12 @@ final class AnalysisSubmitViewModel: ObservableObject {
         do {
             let ep = try Endpoint.post("/analysis/analyze", body: body)
             try await env.auth.api.sendVoid(ep)
+            submitInfo = "✓ 已提交，分析约需 1–3 分钟，完成后会在此提示并进入历史报告"
+            errorMessage = nil
             stockInputs.removeAll()
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            submitInfo = nil
         }
     }
 }
@@ -87,15 +91,106 @@ public struct AnalysisView: View {
                         Color.clear.frame(height: 0)
                     }
                     activeTasksSection
+                    finishedTasksSection
                     Color.clear.frame(height: 100)
                 }
             }
             .background(Color.dsGroupedBackground)
             .hideNavBar()
+            .overlay(alignment: .top) { completionToast }
             .task {
                 await vm.load(env: env)
                 taskStream.start(env: env)
             }
+            .onChange(of: taskStream.lastCompleted?.id) { _, newID in
+                guard let target = newID else { return }
+                // 5s 后自动收起「报告已生成」提示
+                Task { try? await Task.sleep(nanoseconds: 5_000_000_000)
+                    if taskStream.lastCompleted?.id == target { taskStream.clearLastCompleted() }
+                }
+            }
+        }
+    }
+
+    /// 任务完成后点开对应报告：拉取该股最新一份历史报告并以详情页打开。
+    private func openReport(code: String) {
+        guard !code.isEmpty else { return }
+        Task { @MainActor in
+            let resp: HistoryListResponse? = try? await env.auth.api.send(
+                .get("/history", query: ["stock_code": code, "limit": "1"]))
+            if let item = resp?.items?.first {
+                taskStream.clearLastCompleted()
+                env.presentedReport = item
+            }
+        }
+    }
+
+    /// 最近完成/失败的任务区，点按直接打开报告（闭环此前断在这里）。
+    private var finishedTasksSection: some View {
+        let finished = taskStream.finishedTasks
+        return VStack(alignment: .leading, spacing: 8) {
+            if !finished.isEmpty {
+                Text("最近完成")
+                    .font(.footnote).tracking(0.5).foregroundStyle(.secondary)
+                    .padding(.horizontal, 20).padding(.top, 6)
+                VStack(spacing: 0) {
+                    ForEach(finished) { task in
+                        Button { openReport(code: task.stockCode ?? "") } label: { finishedTaskRow(task) }
+                            .buttonStyle(.plain)
+                        if task.id != finished.last?.id { Divider().padding(.leading, 16) }
+                    }
+                }
+                .background(Color.dsSecondaryGrouped, in: RoundedRectangle(cornerRadius: 14))
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private func finishedTaskRow(_ t: TaskInfo) -> some View {
+        let failed = (t.status == "failed")
+        return HStack(spacing: 12) {
+            Image(systemName: failed ? "xmark.circle.fill" : "checkmark.circle.fill")
+                .foregroundStyle(failed ? .red : .green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t.stockName ?? t.stockCode ?? "—").font(.system(size: 16, weight: .medium))
+                Text(failed ? (t.message ?? "分析失败") : "报告已生成 · 点按查看")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if !failed { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }
+        }
+        .padding(.vertical, 12).padding(.horizontal, 16)
+    }
+
+    /// 任务完成瞬间的顶部轻提示：点「查看」直接跳报告；5s 自动消失。
+    @ViewBuilder
+    private var completionToast: some View {
+        if let done = taskStream.lastCompleted {
+            let failed = (done.status == "failed")
+            let title = (done.stockName ?? done.stockCode ?? "分析") + (failed ? " · 分析失败" : " · 报告已生成")
+            Button {
+                if failed { taskStream.clearLastCompleted() } else { openReport(code: done.stockCode ?? "") }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: failed ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
+                        .foregroundStyle(failed ? .orange : .green)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title).font(.subheadline.weight(.medium))
+                        if failed, let m = done.message, !m.isEmpty {
+                            Text(m).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                    }
+                    Spacer()
+                    Text(failed ? "知道了" : "查看 ›").font(.caption.weight(.semibold)).foregroundStyle(DSColor.accent)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.gray.opacity(0.15), lineWidth: 0.5))
+                .padding(.horizontal, 16).padding(.top, 8)
+                .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
+            }
+            .buttonStyle(.plain)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -202,6 +297,9 @@ public struct AnalysisView: View {
 
         if let err = vm.errorMessage {
             Text(err).font(.footnote).foregroundStyle(.red).padding(.horizontal, 20)
+        }
+        if let info = vm.submitInfo {
+            Text(info).font(.footnote).foregroundStyle(.green).padding(.horizontal, 20)
         }
     }
 
