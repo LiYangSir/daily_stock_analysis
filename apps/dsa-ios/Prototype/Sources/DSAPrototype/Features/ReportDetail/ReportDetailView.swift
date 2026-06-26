@@ -217,9 +217,13 @@ public struct ReportDetailView: View {
                     HStack { Spacer(); ProgressView(); Spacer() }.padding(.vertical, 40)
                 } else {
                     marketStatStrip
+                    #if canImport(UIKit)
+                    StockChartGroup(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                    #else
                     KLineChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
                     VolumeChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
                     MACDChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                    #endif
                 }
             }
             .padding(.horizontal, 16)
