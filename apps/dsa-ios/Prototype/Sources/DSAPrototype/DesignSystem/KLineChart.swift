@@ -99,6 +99,39 @@ public struct KLineChart: View {
     }
 }
 
+/// 成交量副图（红绿柱，按 close≥open 着色）。对齐同花顺：价格 → 成交量 → MACD 三段。
+public struct VolumeChart: View {
+    let bars: [KLineData]
+    let market: Market
+    let scheme: StockColorScheme
+
+    public init(bars: [KLineData], market: Market, scheme: StockColorScheme) {
+        self.bars = bars
+        self.market = market
+        self.scheme = scheme
+    }
+
+    public var body: some View {
+        let upColor = DSColor.up(market, scheme: scheme)
+        let downColor = DSColor.down(market, scheme: scheme)
+        Chart {
+            ForEach(Array(bars.enumerated()), id: \.offset) { index, bar in
+                BarMark(x: .value("idx", index), y: .value("vol", bar.volume ?? 0), width: .fixed(5))
+                    .foregroundStyle((bar.close >= bar.open) ? upColor.opacity(0.55) : downColor.opacity(0.55))
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(position: .trailing, values: .automatic(desiredCount: 2)) { _ in
+                AxisGridLine().foregroundStyle(Color.secondary.opacity(0.12))
+                AxisValueLabel().font(.system(size: 8))
+            }
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 4)
+    }
+}
+
 /// MACD 副图（柱 + DIF/DEA 双线）。
 public struct MACDChart: View {
     let bars: [KLineData]
@@ -139,7 +172,15 @@ public struct MACDChart: View {
                         .foregroundStyle(.blue)
                 }
             }
-            .chartXAxis(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                    AxisGridLine().foregroundStyle(Color.secondary.opacity(0.12))
+                    if let idx = value.as(Int.self), bars.indices.contains(idx) {
+                        AxisValueLabel(Self.shortDate(bars[idx].date))
+                            .font(.system(size: 9)).foregroundStyle(.secondary)
+                    }
+                }
+            }
             .chartYAxis {
                 AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
                     AxisGridLine().foregroundStyle(Color.secondary.opacity(0.15))
@@ -148,6 +189,11 @@ public struct MACDChart: View {
             }
             .frame(height: 60)
         }
+    }
+
+    /// "2024-01-01" -> "01-01"（X 轴日期刻度用）。
+    private static func shortDate(_ s: String) -> String {
+        String(s.prefix(10).suffix(5))
     }
 
     private func format(_ v: Double?) -> String {

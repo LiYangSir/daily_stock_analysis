@@ -200,11 +200,56 @@ public struct ReportDetailView: View {
     private var chartArea: some View {
         if !vm.bars.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
+                marketStatStrip
                 KLineChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
+                VolumeChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
                 MACDChart(bars: vm.bars, market: history.market, scheme: env.colorScheme)
             }
             .padding(.horizontal, 16)
         }
+    }
+
+    /// 行情明细（对齐同花顺数据条）：取最新 K 线 OHLCV + 报告时点的量比/换手率/涨跌幅。
+    /// 注：市盈/总市值/流通市值需后端 /quote 扩字段，纯前端暂不可得。
+    @ViewBuilder
+    private var marketStatStrip: some View {
+        let last = vm.bars.last
+        let upC = DSColor.up(history.market, scheme: env.colorScheme)
+        let downC = DSColor.down(history.market, scheme: env.colorScheme)
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                  spacing: 10) {
+            statTile("开盘", last.map { String(format: "%.2f", $0.open) }, color: .secondary)
+            statTile("最高", last.map { String(format: "%.2f", $0.high) }, color: upC)
+            statTile("最低", last.map { String(format: "%.2f", $0.low) }, color: downC)
+            statTile("收盘", last.map { String(format: "%.2f", $0.close) }, color: .primary)
+            if let v = last?.volume { statTile("成交量", Self.abbr(v), color: .secondary) }
+            if let amt = last?.amount { statTile("成交额", Self.abbr(amt), color: .secondary) }
+            if let vr = history.volumeRatio { statTile("量比", String(format: "%.2f", vr), color: .secondary) }
+            if let tr = history.turnoverRate { statTile("换手率", String(format: "%.2f%%", tr), color: .secondary) }
+            if let cp = history.changePct {
+                statTile("涨跌幅", String(format: "%+.2f%%", cp),
+                         color: DSColor.change(cp, market: history.market, scheme: env.colorScheme))
+            }
+            if let bar = last, bar.close > 0 {
+                statTile("振幅", String(format: "%.2f%%", (bar.high - bar.low) / bar.close * 100), color: .secondary)
+            }
+        }
+    }
+
+    private func statTile(_ label: String, _ value: String?, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.system(size: 10)).foregroundStyle(.tertiary)
+            Text(value ?? "—").font(.system(size: 13, weight: .medium, design: .rounded))
+                .monospacedDigit().foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private static func abbr(_ v: Double) -> String {
+        let a = abs(v)
+        if a >= 1e8 { return String(format: "%.2f亿", v / 1e8) }
+        if a >= 1e4 { return String(format: "%.2f万", v / 1e4) }
+        return String(format: "%.0f", v)
     }
 
     // MARK: - Summary (核心分析摘要)
